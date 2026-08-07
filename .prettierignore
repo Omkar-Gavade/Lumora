@@ -1,0 +1,9 @@
+node_modules
+dist
+*.tsbuildinfo
+package-lock.json
+
+# The frontend predates the shared Prettier config and is formatted by hand to
+# the same rules. It is excluded rather than reformatted so that adopting
+# Prettier at the workspace root produces no diff in shipped frontend code.
+frontend

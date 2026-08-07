@@ -1,0 +1,50 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+
+    "rootDir": "./src",
+    "outDir": "./dist",
+    /* Not `composite`. The backend is a leaf — nothing imports it — so it emits
+       no declarations, and composite projects are required to. It is still
+       built with `tsc -b` so that its reference to ../shared is built first. */
+    "declaration": false,
+    "sourceMap": true,
+
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+
+    /* Strictness — docs/06-roadmap.md §3, matching the frontend exactly.
+       `exactOptionalPropertyTypes` in particular is what stops an optional
+       field from silently becoming `undefined` on the wire. */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "exactOptionalPropertyTypes": true,
+
+    /*
+      No `paths` aliases, deliberately.
+
+      TypeScript does not rewrite path aliases on emit — `@/config/env.js`
+      survives into the JavaScript verbatim and Node cannot resolve it. Making
+      aliases work at runtime costs either a bundler or a resolver hook on
+      every entry point, and `node dist/server.js` has to run with no flags and
+      no loader. Relative specifiers with explicit `.js` extensions are what
+      NodeNext emits natively, so the compiled output is plain runnable ESM.
+
+      The frontend keeps its `@/` alias because Vite rewrites it at build time.
+      The two are different because the toolchains genuinely differ, not
+      because the convention drifted.
+    */
+  },
+  "include": ["src"],
+  "references": [{ "path": "../shared" }]
+}

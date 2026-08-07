@@ -1,0 +1,31 @@
+{
+  "name": "lumora",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Chat with your documents. Grounded answers, real citations.",
+  "type": "module",
+  "workspaces": [
+    "shared",
+    "backend",
+    "frontend"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "npm run build --workspace @lumora/shared && concurrently -n backend,frontend -c blue,magenta \"npm:dev:backend\" \"npm:dev:frontend\"",
+    "dev:backend": "npm run dev --workspace @lumora/backend",
+    "dev:frontend": "npm run dev --workspace @lumora/frontend",
+    "build": "npm run build --workspace @lumora/shared && npm run build --workspace @lumora/backend && npm run build --workspace @lumora/frontend",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "format": "prettier --write \"shared/**/*.{ts,json}\" \"backend/**/*.{ts,mjs,json}\"",
+    "format:check": "prettier --check \"shared/**/*.{ts,json}\" \"backend/**/*.{ts,mjs,json}\"",
+    "migrate": "npm run migrate --workspace @lumora/backend",
+    "migrate:status": "npm run migrate:status --workspace @lumora/backend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "prettier": "^3.6.2"
+  }
+}

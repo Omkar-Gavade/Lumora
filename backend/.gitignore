@@ -1,0 +1,9 @@
+node_modules
+dist
+*.tsbuildinfo
+
+.env
+.env.local
+
+# Local file storage for uploaded documents (M3). Never committed.
+uploads

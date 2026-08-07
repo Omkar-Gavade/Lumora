@@ -1,0 +1,43 @@
+{
+  "name": "@lumora/backend",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Lumora API server.",
+  "type": "module",
+  "main": "./dist/server.js",
+  "scripts": {
+    "dev": "tsx watch --clear-screen=false src/server.ts",
+    "build": "tsc -b && node scripts/copy-assets.mjs",
+    "start": "node dist/server.js",
+    "typecheck": "tsc -b --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write \"src/**/*.ts\" \"scripts/**/*.mjs\"",
+    "migrate": "tsx src/db/migrate.ts up",
+    "migrate:status": "tsx src/db/migrate.ts status",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@lumora/shared": "*",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "kysely": "^0.28.9",
+    "pg": "^8.16.3",
+    "pino": "^10.0.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.19.0",
+    "@types/pg": "^8.15.6",
+    "eslint": "^9.39.5",
+    "globals": "^17.9.0",
+    "pino-pretty": "^13.1.2",
+    "tsx": "^4.20.6",
+    "typescript": "~5.7.3",
+    "typescript-eslint": "^8.66.0"
+  }
+}
