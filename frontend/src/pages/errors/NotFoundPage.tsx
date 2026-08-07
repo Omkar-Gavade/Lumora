@@ -1,29 +1,36 @@
 import { Link } from 'react-router-dom';
 import { ROUTES } from '@/app/router/routes';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
-import { Container } from '@/components/common/Container';
+import { StatusPage } from '@/components/common/StatusPage';
 import { Button } from '@/components/ui/Button';
 
+/**
+ * The public 404, rendered inside the marketing layout.
+ *
+ * Its authenticated twin lives in `AppNotFoundPage` and shares this exact
+ * panel through `StatusPage` — same words, same proportions, different
+ * surrounding chrome, because a signed-in user should keep their navigation
+ * when they hit a dead end rather than being dumped onto the marketing site.
+ */
 export function NotFoundPage() {
   useDocumentTitle('Page not found — Lumora');
 
   return (
-    <Container className="flex min-h-[60vh] items-center py-32">
-      <div className="mx-auto max-w-md text-center">
-        <p className="font-mono text-caption text-tertiary">404</p>
-        <h1 className="mt-4 text-h1">This page doesn&rsquo;t exist</h1>
-        <p className="mt-4 text-body text-secondary text-pretty">
-          The link may be out of date, or the page may have moved.
-        </p>
-        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+    <StatusPage
+      code="404"
+      title="This page doesn’t exist"
+      description="The link may be out of date, or the page may have moved."
+      className="min-h-[60vh]"
+      actions={
+        <>
           <Button asChild variant="primary" size="lg">
             <Link to={ROUTES.home}>Back to home</Link>
           </Button>
           <Button asChild variant="secondary" size="lg">
             <Link to={ROUTES.login}>Sign in</Link>
           </Button>
-        </div>
-      </div>
-    </Container>
+        </>
+      }
+    />
   );
 }

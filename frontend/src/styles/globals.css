@@ -75,6 +75,26 @@
 
   --focus-ring: var(--indigo-600);
 
+  /*
+    App chrome. The sidebar is a distinct surface from the reading canvas, so
+    it gets its own three-step set rather than borrowing --bg-hover/--bg-active:
+    those are tuned against the canvas and read as almost nothing on a tinted
+    panel. Keeping them separate means the app's most-used component can be
+    retuned in one place without disturbing cards, menus, or inputs.
+
+    Light: the panel is tinted and the ACTIVE row is white — the selected item
+    lifts toward the reading surface it will open. Dark inverts that logic:
+    the panel already sits above a near-black canvas, so the active row goes
+    lighter still.
+  */
+  --bg-sidebar: var(--ink-50);
+  --bg-sidebar-hover: var(--ink-100);
+  --bg-sidebar-active: var(--ink-0);
+
+  /* Behind overlays. Ink rather than pure black, so the dimmed page keeps the
+     interface's cool cast instead of going grey-green. */
+  --scrim: rgb(10 10 12 / 0.4);
+
   /* Elevation. Three levels; most surfaces use none. */
   --shadow-1: 0 1px 2px rgb(10 10 12 / 0.05);
   --shadow-2:
@@ -97,7 +117,15 @@
 
   --text-primary: var(--ink-50);
   --text-secondary: #9d9daa;
-  --text-tertiary: #7c7c8a;
+  /*
+    Lifted from #7c7c8a when the app shell landed. That value cleared 4.5:1 on
+    the canvas (4.81) but only reached 4.47 on the sidebar's ink-900 panel, and
+    tertiary text is exactly what a sidebar is full of — group labels, the
+    storage figure, empty-state copy. #848492 clears AA on all three dark
+    surfaces (canvas 5.37, sidebar 4.98, inset 4.60) and stays clearly below
+    --text-secondary in the hierarchy.
+  */
+  --text-tertiary: #848492;
   --text-inverse: var(--ink-950);
 
   --accent: var(--indigo-400);
@@ -114,6 +142,16 @@
   --on-ink-solid: var(--ink-950);
 
   --focus-ring: var(--indigo-400);
+
+  --bg-sidebar: var(--ink-900);
+  /* One step above --bg-hover: the sidebar's own base is already ink-900, so
+     the canvas hover value would land on top of itself and read as dead. */
+  --bg-sidebar-hover: #212129;
+  --bg-sidebar-active: var(--ink-800);
+
+  /* Heavier on dark: a 40% scrim over a near-black canvas barely separates the
+     overlay from what it covers. */
+  --scrim: rgb(0 0 0 / 0.6);
 
   /* Shadows barely read on dark surfaces; elevation comes from lighter fills. */
   --shadow-1: 0 1px 2px rgb(0 0 0 / 0.4);
@@ -150,6 +188,11 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
+
+  --color-scrim: var(--scrim);
+  --color-sidebar: var(--bg-sidebar);
+  --color-sidebar-hover: var(--bg-sidebar-hover);
+  --color-sidebar-active: var(--bg-sidebar-active);
 
   --color-ink-solid: var(--ink-solid);
   --color-ink-solid-hover: var(--ink-solid-hover);
@@ -210,6 +253,20 @@
 
   --container-content: 68rem; /* 1088px — the marketing measure */
   --container-prose: 44rem; /* 704px  — legal + long-form reading */
+  --container-app: 76rem; /* 1216px — the app measure, wider than marketing
+                             because tables and threads need the room */
+
+  /*
+    App shell geometry. Declared once so the header, the sidebar, and anything
+    that has to line up with either of them read the same number. The sidebar's
+    brand row and the header are the SAME height on purpose: their bottom edges
+    form one continuous horizontal line across the whole viewport, which is the
+    single most visible alignment in the entire shell.
+  */
+  --app-header-h: 3.5rem; /* 56px */
+  --sidebar-w: 16.5rem; /* 264px — expanded */
+  --sidebar-w-collapsed: 4rem; /* 64px  — icon rail */
+  --sidebar-w-drawer: 18rem; /* 288px — mobile drawer, thumb-friendly */
 }
 
 @layer base {
@@ -304,6 +361,103 @@
   .reveal[data-revealed='true'] {
     opacity: 1;
     transform: none;
+  }
+
+  /*
+    App scroll regions.
+
+    The default OS scrollbar is ~15px of high-contrast chrome running down the
+    edge of every panel; at the density the app runs at, that is the loudest
+    thing on screen. Thin + low-contrast + transparent track, and the thumb
+    only earns contrast on hover.
+
+    Firefox gets the standard properties; WebKit needs the pseudo-elements.
+    Both are scoped to this class so the browser-native scrollbar survives
+    anywhere it is genuinely wanted.
+  */
+  .scroll-region {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-default) transparent;
+    /* Reserve the gutter so content does not shift sideways the moment a list
+       grows past one screen. */
+    scrollbar-gutter: stable;
+  }
+
+  .scroll-region::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  .scroll-region::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scroll-region::-webkit-scrollbar-thumb {
+    background-color: var(--border-default);
+    border-radius: 9999px;
+    /* Transparent border painted over the thumb narrows it to ~4px while
+       keeping the full 10px as the grab target. */
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+
+  .scroll-region::-webkit-scrollbar-thumb:hover {
+    background-color: var(--border-strong);
+  }
+
+  /*
+    Overlay entrances. Popovers and dialogs mount on open, so there is no
+    previous state for a transition to interpolate from — these need real
+    keyframes. Exits are not animated: an unmount that lingers is a state
+    machine's worth of complexity for 120ms nobody waits through.
+
+    Both are transform + opacity only, and the global reduced-motion rule
+    already collapses their duration to nothing.
+  */
+  @keyframes lumora-pop-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes lumora-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .pop-in {
+    animation: lumora-pop-in 140ms var(--ease-decelerate) both;
+  }
+
+  /* Menus anchored above their trigger settle downward toward it, so the
+     motion still points back at what opened them. */
+  @keyframes lumora-pop-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(4px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .pop-in-up {
+    animation: lumora-pop-in-up 140ms var(--ease-decelerate) both;
+    transform-origin: bottom;
+  }
+
+  .fade-in {
+    animation: lumora-fade-in 160ms var(--ease-standard) both;
   }
 }
 

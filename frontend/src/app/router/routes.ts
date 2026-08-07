@@ -14,6 +14,16 @@ export const ROUTES = {
   verifyEmail: '/verify-email',
 
   app: '/app',
+  chat: '/app/chat',
+  knowledge: '/app/knowledge',
+  documents: '/app/documents',
+  settings: '/app/settings',
+  serverError: '/500',
+} as const;
+
+/** Path builders for routes that take a parameter. */
+export const buildRoute = {
+  conversation: (id: string) => `${ROUTES.chat}/${id}`,
 } as const;
 
 /** Homepage section anchors, used by both the nav and the sections themselves. */

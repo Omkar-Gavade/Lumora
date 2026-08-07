@@ -31,9 +31,21 @@ const CASES = [
   ['light · focus ring on canvas', '#4f46e5', '#ffffff', 3],
   ['light · danger on canvas', '#dc2626', '#ffffff', 4.5],
   ['light · success on canvas', '#16a34a', '#ffffff', 3],
+  // App shell. The sidebar is a third surface with its own hover and active
+  // fills, so every pair that only ever occurs there is asserted here too —
+  // "it passes on the canvas" says nothing about a tinted panel.
+  ['light · text-tertiary on sidebar', '#6e6e7c', '#f7f7f9', 4.5],
+  ['light · text-secondary on sidebar-hover', '#55555f', '#f0f0f3', 4.5],
+  ['light · active label on sidebar-active', '#141418', '#ffffff', 4.5],
+  ['light · active icon on sidebar-active', '#4f46e5', '#ffffff', 3],
   ['dark · text-primary on canvas', '#f7f7f9', '#0a0a0c', 4.5],
+  ['dark · text-tertiary on sidebar', '#848492', '#141418', 4.5],
+  ['dark · text-tertiary on inset', '#848492', '#1c1c22', 4.5],
+  ['dark · text-secondary on sidebar-hover', '#9d9daa', '#212129', 4.5],
+  ['dark · active label on sidebar-active', '#f7f7f9', '#27272e', 4.5],
+  ['dark · active icon on sidebar-active', '#8183f4', '#27272e', 3],
   ['dark · text-secondary on canvas', '#9d9daa', '#0a0a0c', 4.5],
-  ['dark · text-tertiary on canvas', '#7c7c8a', '#0a0a0c', 4.5],
+  ['dark · text-tertiary on canvas', '#848492', '#0a0a0c', 4.5],
   ['dark · text-secondary on raised', '#9d9daa', '#141418', 4.5],
   ['dark · accent link on canvas', '#8183f4', '#0a0a0c', 4.5],
   ['dark · on-ink on ink-solid', '#0a0a0c', '#f7f7f9', 4.5],

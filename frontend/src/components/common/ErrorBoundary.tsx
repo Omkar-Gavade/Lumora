@@ -1,6 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
-import { Container } from './Container';
-import { Button } from '@/components/ui/Button';
+import { ErrorFallback } from './ErrorFallback';
 
 interface Props {
   children: ReactNode;
@@ -41,25 +40,12 @@ export class ErrorBoundary extends Component<Props, State> {
     if (!error) return this.props.children;
     if (this.props.fallback) return this.props.fallback;
 
+    // The panel itself lives in `ErrorFallback`, shared with the 404 and 500
+    // pages so all three failure screens keep identical proportions.
     return (
-      <Container className="flex min-h-dvh items-center py-24">
-        <div className="mx-auto max-w-md text-center">
-          <p className="font-mono text-caption text-tertiary">Error</p>
-          <h1 className="mt-4 text-h2">Something went wrong on our side</h1>
-          <p className="mt-4 text-body text-secondary text-pretty">
-            This page failed to render. Reloading usually fixes it. If it keeps happening,
-            let us know what you were doing.
-          </p>
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Button variant="primary" size="lg" onClick={this.reset}>
-              Try again
-            </Button>
-            <Button variant="secondary" size="lg" onClick={() => window.location.reload()}>
-              Reload the page
-            </Button>
-          </div>
-        </div>
-      </Container>
+      <div className="flex min-h-dvh items-center">
+        <ErrorFallback error={error} onReset={this.reset} />
+      </div>
     );
   }
 }
