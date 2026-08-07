@@ -1,0 +1,29 @@
+/**
+ * Single source of truth for every path. Components never hardcode a route
+ * string — a rename here is a compile error everywhere it matters.
+ */
+export const ROUTES = {
+  home: '/',
+  privacy: '/privacy',
+  terms: '/terms',
+
+  login: '/login',
+  signup: '/signup',
+  forgotPassword: '/forgot-password',
+  resetPassword: '/reset-password',
+  verifyEmail: '/verify-email',
+
+  app: '/app',
+} as const;
+
+/** Homepage section anchors, used by both the nav and the sections themselves. */
+export const SECTIONS = {
+  features: 'features',
+  howItWorks: 'how-it-works',
+  whyRag: 'why-rag',
+  useCases: 'use-cases',
+  privacy: 'privacy',
+  faq: 'faq',
+} as const;
+
+export const anchor = (id: (typeof SECTIONS)[keyof typeof SECTIONS]) => `/#${id}`;

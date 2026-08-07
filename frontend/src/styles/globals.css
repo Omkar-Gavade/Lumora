@@ -1,0 +1,328 @@
+@import 'tailwindcss';
+@import './fonts.css';
+
+/*
+  Lumora design tokens.
+  Raw ramps live in :root. Semantic aliases are what components consume —
+  never a raw ramp value, never a hex literal in a component.
+  See docs/01-design-system.md §2.
+*/
+
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+:root {
+  /* ── Ink ramp — cool neutral. Carries the entire interface. ───────────── */
+  --ink-0: #ffffff;
+  --ink-25: #fcfcfd;
+  --ink-50: #f7f7f9;
+  --ink-100: #f0f0f3;
+  --ink-150: #e8e8ed;
+  --ink-200: #dedee5;
+  --ink-300: #c7c7d1;
+  --ink-400: #9a9aa8;
+  --ink-500: #6e6e7c;
+  --ink-600: #55555f;
+  --ink-700: #3d3d46;
+  --ink-800: #27272e;
+  --ink-850: #1c1c22;
+  --ink-900: #141418;
+  --ink-950: #0a0a0c;
+
+  /* ── Accent — used for links, focus, active state, citations. Nothing else. */
+  --indigo-300: #a5a8fb;
+  --indigo-400: #8183f4;
+  --indigo-500: #6366f1;
+  --indigo-600: #4f46e5;
+  --indigo-700: #4338ca;
+
+  /* ── Semantic state ─────────────────────────────────────────────────────── */
+  --green-500: #16a34a;
+  --green-400: #4ade80;
+  --amber-500: #d97706;
+  --amber-400: #fbbf24;
+  --red-500: #dc2626;
+  --red-400: #f87171;
+
+  /* ── Semantic aliases — LIGHT ───────────────────────────────────────────── */
+  --bg-canvas: var(--ink-0);
+  --bg-subtle: var(--ink-50);
+  --bg-raised: var(--ink-0);
+  --bg-inset: var(--ink-100);
+  --bg-hover: var(--ink-100);
+  --bg-active: var(--ink-200);
+
+  --border-subtle: var(--ink-150);
+  --border-default: var(--ink-200);
+  --border-strong: var(--ink-300);
+
+  --text-primary: var(--ink-900);
+  --text-secondary: var(--ink-600);
+  --text-tertiary: var(--ink-500);
+  --text-inverse: var(--ink-0);
+
+  --accent: var(--indigo-600);
+  --accent-hover: var(--indigo-700);
+  --accent-subtle: #eef0fe;
+
+  --success: var(--green-500);
+  --warning: var(--amber-500);
+  --danger: var(--red-500);
+
+  /* Ink button — primary action is near-black, not a colored blob. */
+  --ink-solid: var(--ink-900);
+  --ink-solid-hover: var(--ink-800);
+  --on-ink-solid: var(--ink-0);
+
+  --focus-ring: var(--indigo-600);
+
+  /* Elevation. Three levels; most surfaces use none. */
+  --shadow-1: 0 1px 2px rgb(10 10 12 / 0.05);
+  --shadow-2:
+    0 4px 12px rgb(10 10 12 / 0.06), 0 1px 3px rgb(10 10 12 / 0.04);
+
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  --bg-canvas: var(--ink-950);
+  --bg-subtle: var(--ink-900);
+  --bg-raised: var(--ink-900);
+  --bg-inset: var(--ink-850);
+  --bg-hover: #1a1a20;
+  --bg-active: var(--ink-800);
+
+  --border-subtle: #22222a;
+  --border-default: var(--ink-800);
+  --border-strong: var(--ink-700);
+
+  --text-primary: var(--ink-50);
+  --text-secondary: #9d9daa;
+  --text-tertiary: #7c7c8a;
+  --text-inverse: var(--ink-950);
+
+  --accent: var(--indigo-400);
+  --accent-hover: var(--indigo-300);
+  --accent-subtle: #1a1a2e;
+
+  --success: var(--green-400);
+  --warning: var(--amber-400);
+  --danger: var(--red-400);
+
+  /* Inverted in dark: the primary action becomes near-white. */
+  --ink-solid: var(--ink-50);
+  --ink-solid-hover: var(--ink-0);
+  --on-ink-solid: var(--ink-950);
+
+  --focus-ring: var(--indigo-400);
+
+  /* Shadows barely read on dark surfaces; elevation comes from lighter fills. */
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-2: 0 4px 16px rgb(0 0 0 / 0.5), 0 1px 3px rgb(0 0 0 / 0.3);
+
+  color-scheme: dark;
+}
+
+/*
+  `inline` keeps the var reference intact, so utilities resolve to the
+  semantic custom property at runtime and follow [data-theme] automatically.
+*/
+@theme inline {
+  --color-canvas: var(--bg-canvas);
+  --color-subtle: var(--bg-subtle);
+  --color-raised: var(--bg-raised);
+  --color-inset: var(--bg-inset);
+  --color-hover: var(--bg-hover);
+  --color-active: var(--bg-active);
+
+  --color-line: var(--border-subtle);
+  --color-line-default: var(--border-default);
+  --color-line-strong: var(--border-strong);
+
+  --color-primary: var(--text-primary);
+  --color-secondary: var(--text-secondary);
+  --color-tertiary: var(--text-tertiary);
+  --color-inverse: var(--text-inverse);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-subtle: var(--accent-subtle);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+
+  --color-ink-solid: var(--ink-solid);
+  --color-ink-solid-hover: var(--ink-solid-hover);
+  --color-on-ink: var(--on-ink-solid);
+
+  --color-ring: var(--focus-ring);
+
+  --font-sans:
+    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+
+  /* Type scale. Tracking tightens as size grows — untracked display type
+     is the fastest way to look amateur. */
+  --text-display: 3.5rem;
+  --text-display--line-height: 1.06;
+  --text-display--letter-spacing: -0.033em;
+  --text-display--font-weight: 400;
+
+  --text-h1: 2.5rem;
+  --text-h1--line-height: 1.12;
+  --text-h1--letter-spacing: -0.028em;
+
+  --text-h2: 1.875rem;
+  --text-h2--line-height: 1.2;
+  --text-h2--letter-spacing: -0.022em;
+
+  --text-h3: 1.25rem;
+  --text-h3--line-height: 1.4;
+  --text-h3--letter-spacing: -0.014em;
+
+  --text-body-lg: 1.125rem;
+  --text-body-lg--line-height: 1.65;
+
+  --text-body: 1rem;
+  --text-body--line-height: 1.65;
+
+  --text-body-sm: 0.875rem;
+  --text-body-sm--line-height: 1.55;
+
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.45;
+
+  --text-micro: 0.6875rem;
+  --text-micro--line-height: 1.45;
+  --text-micro--letter-spacing: 0.06em;
+
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+
+  --shadow-e1: var(--shadow-1);
+  --shadow-e2: var(--shadow-2);
+
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-decelerate: cubic-bezier(0, 0, 0, 1);
+
+  --container-content: 68rem; /* 1088px — the marketing measure */
+  --container-prose: 44rem; /* 704px  — legal + long-form reading */
+}
+
+@layer base {
+  * {
+    border-color: var(--border-subtle);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    /* Sticky header height + breathing room, so anchor targets never
+       land underneath the nav. */
+    scroll-padding-top: 6rem;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--bg-canvas);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.65;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-serif);
+    font-optical-sizing: auto;
+    font-weight: 400;
+    color: var(--text-primary);
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Focus is never removed. :focus-visible so pointer users see no ring. */
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background-color: var(--accent-subtle);
+    color: var(--text-primary);
+  }
+
+  /* Numerals align in tables and metadata rows. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /*
+    Auth routes tint the page so the auth card has a surface to lift off.
+
+    This has to live on <body>, not on a wrapper div: the scrollbar gutter and
+    the overscroll area are painted from the body's background, so a tinted
+    inner element leaves a white strip down the right edge in light mode. The
+    dark case only looked fine because its tint happens to equal the canvas.
+
+    Set by AuthLayout while mounted, and removed on unmount.
+  */
+  body[data-surface='auth'] {
+    background-color: var(--bg-subtle);
+  }
+
+  [data-theme='dark'] body[data-surface='auth'] {
+    /* Inverted: --bg-subtle and --bg-raised are the same ink-900 in dark, so
+       tinting here would flatten the card instead of lifting it. */
+    background-color: var(--bg-canvas);
+  }
+}
+
+@layer components {
+  /* Scroll reveal. Motion dial 3/10 — 12px and opacity only, nothing else. */
+  .reveal {
+    opacity: 0;
+    transform: translateY(12px);
+    transition:
+      opacity 500ms var(--ease-decelerate),
+      transform 500ms var(--ease-decelerate);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+
+  .reveal[data-revealed='true'] {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
