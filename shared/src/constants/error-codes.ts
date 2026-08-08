@@ -11,10 +11,11 @@
  * application.
  *
  * Only the codes the current milestone can actually produce are listed.
- * Domain codes (`TOKEN_EXPIRED`, `DOCUMENT_NOT_FOUND`, `NO_TEXT_LAYER`, …)
- * arrive with the milestone that raises them.
+ * Domain codes for documents and chat arrive with the milestone that raises
+ * them.
  */
 export const ERROR_CODES = {
+  // ── Generic ────────────────────────────────────────────────────────────────
   /**
    * The request itself is malformed — unparseable JSON, a truncated body.
    * Distinct from `VALIDATION_ERROR`: this one never had fields to report on.
@@ -42,6 +43,41 @@ export const ERROR_CODES = {
   INTERNAL_ERROR: 'INTERNAL_ERROR',
   /** A dependency the request needs is not ready. 503. */
   SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
+
+  // ── Authentication ─────────────────────────────────────────────────────────
+  /**
+   * Wrong email, wrong password, or no such account — deliberately one code.
+   * Splitting it into "no such user" and "bad password" hands an attacker a
+   * free account-enumeration oracle and tells a legitimate user nothing they
+   * can act on (docs/04-data-and-api.md §3.3).
+   */
+  INVALID_CREDENTIALS: 'INVALID_CREDENTIALS',
+  /**
+   * Signup hit an existing address. Returned only from signup, where the
+   * address was supplied by someone who is asserting they own it — the leak is
+   * unavoidable if the product is to explain why signup failed at all.
+   */
+  EMAIL_TAKEN: 'EMAIL_TAKEN',
+  /** Too many failed sign-ins; the account is temporarily locked. */
+  ACCOUNT_LOCKED: 'ACCOUNT_LOCKED',
+  /** The access token is expired. The client should refresh, then retry once. */
+  TOKEN_EXPIRED: 'TOKEN_EXPIRED',
+  /** The token is malformed, wrongly signed, or of the wrong type. */
+  TOKEN_INVALID: 'TOKEN_INVALID',
+  /**
+   * A refresh token was presented that had already been rotated away. The
+   * family is revoked and the client must sign in again
+   * (docs/04-data-and-api.md §3.2).
+   */
+  TOKEN_REUSED: 'TOKEN_REUSED',
+  /** The action requires a verified email address (FR-5). */
+  EMAIL_NOT_VERIFIED: 'EMAIL_NOT_VERIFIED',
+  /** The email address is already verified — resending would be pointless. */
+  EMAIL_ALREADY_VERIFIED: 'EMAIL_ALREADY_VERIFIED',
+  /** A verification or reset link is expired, consumed, or unrecognized. */
+  INVALID_VERIFICATION_TOKEN: 'INVALID_VERIFICATION_TOKEN',
+  /** The chosen password appears in a public breach corpus. */
+  PASSWORD_BREACHED: 'PASSWORD_BREACHED',
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];

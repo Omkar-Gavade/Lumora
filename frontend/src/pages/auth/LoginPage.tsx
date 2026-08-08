@@ -1,7 +1,11 @@
 import { useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ROUTES } from '@/app/router/routes';
+import { safeNextPath } from '@/app/router/safe-next';
+import { useAuth } from '@/app/providers/AuthProvider';
+import { messageForError } from '@/constants/messages';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { AuthCard } from '@/components/common/AuthCard';
 import { FormField } from '@/components/ui/FormField';
@@ -12,11 +16,14 @@ import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { TextLink } from '@/components/ui/TextLink';
 import { loginSchema, type LoginValues } from '@/features/auth/schemas/auth.schemas';
-import { mockLogin, MockAuthError } from '@/features/auth/api/mock-auth';
+import { login } from '@/features/auth/api/auth.api';
 
 export function LoginPage() {
   useDocumentTitle('Sign in — Lumora');
   const [formError, setFormError] = useState<string | null>(null);
+  const { adoptSession } = useAuth();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const {
     register,
@@ -33,15 +40,17 @@ export function LoginPage() {
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
     try {
-      await mockLogin(values.email);
-      // Navigation to /app lands here once the app shell exists.
-      setFormError('Signed in. The app workspace is not built yet — this is the marketing and auth phase.');
+      const session = await login({
+        email: values.email,
+        password: values.password,
+        remember: values.remember,
+      });
+      adoptSession(session);
+      // Return the user where they were sent from, sanitized — `next` comes
+      // from the URL and an unchecked value is an open redirect.
+      void navigate(safeNextPath(searchParams.get('next'), ROUTES.chat), { replace: true });
     } catch (error) {
-      setFormError(
-        error instanceof MockAuthError
-          ? error.message
-          : 'Something went wrong. Please try again.',
-      );
+      setFormError(messageForError(error));
     }
   });
 

@@ -1,3 +1,4 @@
+import cookieParser from 'cookie-parser';
 import express, { type Express } from 'express';
 import { JSON_BODY_LIMIT, URLENCODED_BODY_LIMIT } from './config/index.js';
 import { registerRoutes } from './api/routes/index.js';
@@ -63,8 +64,20 @@ export function createApp(): Express {
   app.use(express.json({ limit: JSON_BODY_LIMIT }));
   app.use(express.urlencoded({ extended: false, limit: URLENCODED_BODY_LIMIT }));
 
-  // 7 — routes. (5 cookie-parser and 6 global rate-limit arrive in M2 with
-  //     the refresh cookie and the auth limits that need them.)
+  // 5 — cookies. The refresh token travels as one, so this must precede the
+  //     auth routes that read it.
+  app.use(cookieParser());
+
+  /*
+    6 — global rate limit: not mounted.
+
+    docs/04-data-and-api.md §3.4 specifies a 300/15min per-IP ceiling, and it
+    belongs to the whole API surface rather than to authentication. The auth
+    endpoints carry their own, stricter, per-route limits; the global ceiling
+    lands when there are non-auth routes for it to protect.
+  */
+
+  // 7 — routes.
   registerRoutes(app);
 
   // 8 — unmatched paths, as a typed error rather than Express' HTML 404.

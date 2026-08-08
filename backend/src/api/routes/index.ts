@@ -1,10 +1,11 @@
-import type { Express } from 'express';
+import { Router, type Express } from 'express';
+import { authRouter } from './auth.routes.js';
 import { healthRouter } from './health.routes.js';
 
 /**
  * The single place routes are attached to the application.
  *
- * `app.ts` calls this and does not know what a health route is; adding a
+ * `app.ts` calls this and does not know what an auth route is; adding a
  * feature is one line here plus its own route file, never an edit to the
  * middleware pipeline.
  *
@@ -15,10 +16,14 @@ import { healthRouter } from './health.routes.js';
  * and moving it on an API version bump breaks all three at the moment the new
  * version ships. Everything a *client* consumes is versioned; nothing an
  * operator consumes should be.
- *
- * `/api/v1` is registered in M2, when it has children. Mounting an empty
- * router now would be scaffolding that responds 404 in a shape nobody chose.
  */
+export const API_PREFIX = '/api/v1';
+
 export function registerRoutes(app: Express): void {
   app.use('/health', healthRouter);
+
+  const api = Router();
+  api.use('/auth', authRouter);
+
+  app.use(API_PREFIX, api);
 }

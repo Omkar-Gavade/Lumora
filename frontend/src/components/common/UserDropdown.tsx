@@ -1,7 +1,8 @@
 import type { ReactElement } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { LogOut, Moon, Settings, Sun } from 'lucide-react';
 import { ROUTES } from '@/app/router/routes';
-import { useSession } from '@/app/providers/SessionProvider';
+import { useAuth, useAuthenticatedUser } from '@/app/providers/AuthProvider';
 import { useTheme } from '@/app/providers/ThemeProvider';
 import { Menu, MenuHeader, MenuItem, MenuSeparator } from '@/components/ui/Menu';
 
@@ -25,13 +26,15 @@ interface UserDropdownProps {
  * from crowding, and this menu becomes the only way to change it.
  */
 export function UserDropdown({ trigger, side = 'bottom', align = 'end' }: UserDropdownProps) {
-  const { user, signOut } = useSession();
+  const user = useAuthenticatedUser();
+  const { signOut } = useAuth();
   const { theme, toggle } = useTheme();
+  const navigate = useNavigate();
 
   return (
     <Menu trigger={trigger} label="Account" side={side} align={align} className="min-w-60">
       <MenuHeader>
-        <p className="truncate text-body-sm font-medium text-primary">{user.name}</p>
+        <p className="truncate text-body-sm font-medium text-primary">{user.displayName}</p>
         <p className="mt-0.5 truncate text-caption text-tertiary">{user.email}</p>
       </MenuHeader>
 
@@ -47,7 +50,16 @@ export function UserDropdown({ trigger, side = 'bottom', align = 'end' }: UserDr
 
       <MenuSeparator />
 
-      <MenuItem icon={LogOut} onSelect={signOut} destructive>
+      {/* Navigation is explicit rather than left to the guard. `ProtectedRoute`
+          would redirect on the next render anyway, but going through it means
+          a frame of the app shell rendering with no user behind it. */}
+      <MenuItem
+        icon={LogOut}
+        onSelect={() => {
+          void signOut().then(() => navigate(ROUTES.login, { replace: true }));
+        }}
+        destructive
+      >
         Sign out
       </MenuItem>
     </Menu>

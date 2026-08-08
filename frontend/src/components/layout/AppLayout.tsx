@@ -1,7 +1,6 @@
 import { Suspense, useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { cn } from '@/lib/utils/cn';
-import { SessionProvider } from '@/app/providers/SessionProvider';
 import { SidebarProvider } from '@/app/providers/SidebarProvider';
 import { CommandPalette } from '@/components/common/CommandPalette';
 import { AppHeader } from './AppHeader';
@@ -94,11 +93,12 @@ function AppShell() {
 
 export function AppLayout() {
   return (
-    <SessionProvider>
-      {/* Inside the router, because it closes the drawer on navigation. */}
-      <SidebarProvider>
-        <AppShell />
-      </SidebarProvider>
-    </SessionProvider>
+    // `AuthProvider` sits at the application root, not here: the auth screens
+    // and the guards need it too, and mounting it inside the shell would mean
+    // the session is only known once the shell has already rendered.
+    // Inside the router, because it closes the drawer on navigation.
+    <SidebarProvider>
+      <AppShell />
+    </SidebarProvider>
   );
 }

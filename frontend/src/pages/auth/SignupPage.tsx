@@ -15,12 +15,15 @@ import { Alert } from '@/components/ui/Alert';
 import { TextLink } from '@/components/ui/TextLink';
 import { PasswordRequirements } from '@/features/auth/components/PasswordRequirements';
 import { signupSchema, type SignupValues } from '@/features/auth/schemas/auth.schemas';
-import { mockSignup, MockAuthError } from '@/features/auth/api/mock-auth';
+import { signup } from '@/features/auth/api/auth.api';
+import { useAuth } from '@/app/providers/AuthProvider';
+import { messageForError } from '@/constants/messages';
 
 export function SignupPage() {
   useDocumentTitle('Create your account — Lumora');
   const navigate = useNavigate();
   const [formError, setFormError] = useState<string | null>(null);
+  const { adoptSession } = useAuth();
 
   const {
     register,
@@ -45,16 +48,19 @@ export function SignupPage() {
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
     try {
-      await mockSignup(values.email);
+      const session = await signup({
+        displayName: values.name,
+        email: values.email,
+        password: values.password,
+      });
+      // FR-5: signup issues a real session immediately. The account is usable —
+      // only uploads and chat wait on verification.
+      adoptSession(session);
       // Carry the address forward so the next screen can show where the
       // verification email went — a typo is otherwise invisible.
       void navigate(`${ROUTES.verifyEmail}?email=${encodeURIComponent(values.email)}`);
     } catch (error) {
-      setFormError(
-        error instanceof MockAuthError
-          ? error.message
-          : 'Something went wrong. Please try again.',
-      );
+      setFormError(messageForError(error));
     }
   });
 

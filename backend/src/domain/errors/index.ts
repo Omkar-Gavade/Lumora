@@ -8,7 +8,20 @@
 export { AppError, InternalServerError, isAppError } from './app-error.js';
 export { ERROR_CODES, type ErrorCode } from './error-codes.js';
 
-export { UnauthorizedError, ForbiddenError } from './auth-errors.js';
+export {
+  UnauthorizedError,
+  ForbiddenError,
+  InvalidCredentialsError,
+  EmailTakenError,
+  AccountLockedError,
+  TokenExpiredError,
+  TokenInvalidError,
+  TokenReusedError,
+  EmailNotVerifiedError,
+  EmailAlreadyVerifiedError,
+  InvalidVerificationTokenError,
+  PasswordBreachedError,
+} from './auth-errors.js';
 export { NotFoundError, ConflictError, QuotaExceededError } from './resource-errors.js';
 export {
   BadRequestError,

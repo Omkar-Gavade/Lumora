@@ -15,7 +15,7 @@ import {
   forgotPasswordSchema,
   type ForgotPasswordValues,
 } from '@/features/auth/schemas/auth.schemas';
-import { mockForgotPassword } from '@/features/auth/api/mock-auth';
+import { forgotPassword } from '@/features/auth/api/auth.api';
 
 export function ForgotPasswordPage() {
   useDocumentTitle('Reset your password — Lumora');
@@ -34,15 +34,29 @@ export function ForgotPasswordPage() {
   });
 
   const onSubmit = handleSubmit(async (values) => {
-    await mockForgotPassword();
-    // Always reports success, whether or not the account exists. Confirming
-    // existence here would turn this form into an account-enumeration oracle.
+    /*
+      Always reports success, whether or not the account exists — and that
+      includes when the request itself fails. The endpoint answers 200 for any
+      valid address by design; surfacing a client-side error here would
+      reintroduce the enumeration signal the endpoint was built to remove, and
+      a rate-limit rejection would silently confirm the address had been tried
+      before.
+    */
+    try {
+      await forgotPassword(values.email);
+    } catch {
+      // Deliberately swallowed; see above.
+    }
     setSentTo(values.email);
     start();
   });
 
   const onResend = async () => {
-    await mockForgotPassword();
+    try {
+      await forgotPassword(getValues('email'));
+    } catch {
+      // Same reasoning as the initial submit.
+    }
     start();
   };
 

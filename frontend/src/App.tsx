@@ -1,6 +1,10 @@
 import { Suspense, lazy } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ThemeProvider } from '@/app/providers/ThemeProvider';
+import { AuthProvider } from '@/app/providers/AuthProvider';
+import { ProtectedRoute } from '@/app/router/ProtectedRoute';
+import { PublicOnlyRoute } from '@/app/router/PublicOnlyRoute';
+import { VerifiedRoute } from '@/app/router/VerifiedRoute';
 import { ScrollBehavior } from '@/app/router/ScrollBehavior';
 import { ROUTES } from '@/app/router/routes';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
@@ -80,6 +84,9 @@ export function App() {
     <ThemeProvider>
       <BrowserRouter>
         <ScrollBehavior />
+        {/* Inside the router: the guards it feeds use `useLocation`, and
+            session restoration is what they wait on. */}
+        <AuthProvider>
         <ErrorBoundary>
           <Suspense fallback={RouteFallback}>
             <Routes>
@@ -90,19 +97,41 @@ export function App() {
                 <Route path="*" element={<NotFoundPage />} />
               </Route>
 
+              {/*
+                `PublicOnlyRoute` bounces an already-signed-in user away from
+                these screens (docs/02-frontend.md §4) — a stale "Sign in" link
+                should not offer a login form for the account already in use.
+
+                `verify-email` sits *outside* it, deliberately: the whole point
+                of that screen is to be reachable while signed in but
+                unverified, and it is also the landing page for the emailed
+                link, which may be opened in a browser that already has a
+                session.
+              */}
+              <Route element={<PublicOnlyRoute />}>
+                <Route element={<AuthLayout />}>
+                  <Route path={ROUTES.login} element={<LoginPage />} />
+                  <Route path={ROUTES.signup} element={<SignupPage />} />
+                  <Route path={ROUTES.forgotPassword} element={<ForgotPasswordPage />} />
+                  <Route path={ROUTES.resetPassword} element={<ResetPasswordPage />} />
+                </Route>
+              </Route>
+
               <Route element={<AuthLayout />}>
-                <Route path={ROUTES.login} element={<LoginPage />} />
-                <Route path={ROUTES.signup} element={<SignupPage />} />
-                <Route path={ROUTES.forgotPassword} element={<ForgotPasswordPage />} />
-                <Route path={ROUTES.resetPassword} element={<ResetPasswordPage />} />
                 <Route path={ROUTES.verifyEmail} element={<VerifyEmailPage />} />
               </Route>
 
               {/*
-                The application shell. `ProtectedRoute` and `VerifiedRoute`
-                (docs/02-frontend.md §4) slot in above and below `AppLayout`
-                once auth is wired — the nesting is already shaped for them, so
-                adding the guards is two lines and no restructuring.
+                The application shell.
+
+                `ProtectedRoute` wraps it — while the session resolves it
+                renders the shell skeleton rather than redirecting, which is
+                what prevents the flash-to-login-and-back on every reload.
+
+                `VerifiedRoute` sits *inside*, around chat, knowledge, and
+                documents only. FR-5: an unverified user keeps the shell and
+                Settings — so they can change their password or sign out — and
+                is blocked from just the two expensive actions.
 
                 The shell renders its own 404 rather than falling through to
                 the marketing one: a signed-in user who mistypes a URL should
@@ -119,24 +148,37 @@ export function App() {
                     viewport for a third of a second is the difference between
                     "loading" and "broken".
                   */
-                  <Suspense fallback={<AppShellSkeleton />}>
-                    <AppLayout />
-                  </Suspense>
+                  <ProtectedRoute />
                 }
               >
-                <Route index element={<Navigate to={ROUTES.chat} replace />} />
-                <Route path="chat" element={<ChatPage />} />
-                <Route path="chat/:conversationId" element={<ChatPage />} />
-                <Route path="knowledge" element={<KnowledgeBasePage />} />
-                <Route path="documents" element={<DocumentsPage />} />
-                <Route path="settings" element={<SettingsPage />} />
-                <Route path="*" element={<AppNotFoundPage />} />
+                <Route
+                  element={
+                    <Suspense fallback={<AppShellSkeleton />}>
+                      <AppLayout />
+                    </Suspense>
+                  }
+                >
+                  <Route index element={<Navigate to={ROUTES.chat} replace />} />
+
+                  <Route element={<VerifiedRoute />}>
+                    <Route path="chat" element={<ChatPage />} />
+                    <Route path="chat/:conversationId" element={<ChatPage />} />
+                    <Route path="knowledge" element={<KnowledgeBasePage />} />
+                    <Route path="documents" element={<DocumentsPage />} />
+                  </Route>
+
+                  {/* Outside the verified gate — an unverified user must be
+                      able to reach their account. */}
+                  <Route path="settings" element={<SettingsPage />} />
+                  <Route path="*" element={<AppNotFoundPage />} />
+                </Route>
               </Route>
 
               <Route path={ROUTES.serverError} element={<ServerErrorPage />} />
             </Routes>
           </Suspense>
         </ErrorBoundary>
+        </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>
   );

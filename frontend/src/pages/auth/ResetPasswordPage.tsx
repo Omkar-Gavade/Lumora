@@ -15,7 +15,9 @@ import {
   resetPasswordSchema,
   type ResetPasswordValues,
 } from '@/features/auth/schemas/auth.schemas';
-import { mockResetPassword } from '@/features/auth/api/mock-auth';
+import { resetPassword } from '@/features/auth/api/auth.api';
+import { messageForError } from '@/constants/messages';
+import { Alert as ErrorAlert } from '@/components/ui/Alert';
 
 /**
  * Three states, all reachable and all designed:
@@ -31,6 +33,7 @@ export function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
   const [done, setDone] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const {
     register,
@@ -45,11 +48,21 @@ export function ResetPasswordPage() {
 
   const password = watch('password');
 
-  const tokenIsUsable = Boolean(token) && token !== 'expired';
+  // The server is the authority on whether a token is usable — it is hashed
+  // there and its expiry is not knowable here. This only catches the case of
+  // arriving with no token at all, so the form is not offered when it cannot
+  // possibly succeed.
+  const tokenIsUsable = Boolean(token);
 
-  const onSubmit = handleSubmit(async () => {
-    await mockResetPassword();
-    setDone(true);
+  const onSubmit = handleSubmit(async (values) => {
+    setFormError(null);
+    if (!token) return;
+    try {
+      await resetPassword(token, values.password);
+      setDone(true);
+    } catch (error) {
+      setFormError(messageForError(error));
+    }
   });
 
   if (!tokenIsUsable) {
@@ -101,6 +114,10 @@ export function ResetPasswordPage() {
       description="Pick something you don’t use anywhere else."
     >
       <form onSubmit={(event) => void onSubmit(event)} noValidate className="space-y-5">
+        {/* An expired or already-used link only fails on submit, because only
+            the server can tell — so the failure has to be reportable here. */}
+        {formError && <ErrorAlert>{formError}</ErrorAlert>}
+
         <div>
           {/* Message suppressed — the checklist below states the rules. */}
           <FormField label="New password" invalid={Boolean(errors.password)}>

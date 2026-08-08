@@ -63,6 +63,25 @@ const corsOriginsSchema = z
   )
   .pipe(z.array(z.url({ message: 'each CORS origin must be an absolute URL' })).min(1));
 
+/**
+ * Secrets are length-checked, and in production the schema additionally
+ * refuses anything that looks like a copied placeholder
+ * (docs/03-backend.md §5). A deployment signing tokens with the value from
+ * `.env.example` is indistinguishable from one with no secret at all, and it
+ * is the single most common way a staging config reaches production.
+ */
+const PLACEHOLDER_MARKERS = ['change-me', 'changeme', 'example', 'placeholder', 'secret-here'];
+
+const secretSchema = z
+  .string()
+  .min(32, 'must be at least 32 characters')
+  .refine(
+    (value) =>
+      process.env.NODE_ENV !== 'production' ||
+      !PLACEHOLDER_MARKERS.some((marker) => value.toLowerCase().includes(marker)),
+    'looks like a development placeholder and must not be used in production',
+  );
+
 const envSchema = z.object({
   NODE_ENV: nodeEnvSchema.default('development'),
 
@@ -79,6 +98,34 @@ const envSchema = z.object({
    * for a single node and leaves room for migrations and a psql session.
    */
   DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(100).default(10),
+
+  /** Where the frontend lives. Only used to build links inside emails. */
+  APP_URL: z.url(),
+
+  // ── Authentication ─────────────────────────────────────────────────────────
+  JWT_ACCESS_SECRET: secretSchema,
+  /**
+   * Short by design. An access token cannot be revoked individually, so its
+   * lifetime *is* the revocation window (docs/04-data-and-api.md §3.1).
+   * Capped at an hour: anything longer stops being a mitigation.
+   */
+  JWT_ACCESS_TTL_SECONDS: z.coerce.number().int().min(60).max(3600).default(900),
+  REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().min(1).max(365).default(30),
+
+  // ── Mail ───────────────────────────────────────────────────────────────────
+  /** Only `console` exists today; SMTP arrives with real delivery. */
+  MAIL_DRIVER: z.enum(['console']).default('console'),
+  MAIL_FROM: z.string().min(1).default('Lumora <no-reply@lumora.app>'),
+
+  /**
+   * Checks new passwords against Have I Been Pwned's k-anonymity range API
+   * (docs/04-data-and-api.md §3.3). Off in tests, where a network call would
+   * make the suite slow and flaky.
+   */
+  PASSWORD_BREACH_CHECK: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((value) => value === 'true'),
 
   LOG_LEVEL: logLevelSchema.optional(),
 });

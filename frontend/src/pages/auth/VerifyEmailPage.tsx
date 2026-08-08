@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { Spinner } from '@/components/ui/Spinner';
 import { TextLink } from '@/components/ui/TextLink';
-import { mockResendVerification, mockVerifyEmail } from '@/features/auth/api/mock-auth';
+import { resendVerification, verifyEmail } from '@/features/auth/api/auth.api';
+import { useAuth } from '@/app/providers/AuthProvider';
 
 type Status = 'awaiting' | 'verifying' | 'verified' | 'expired';
 
@@ -26,27 +27,69 @@ export function VerifyEmailPage() {
   useDocumentTitle('Verify your email — Lumora');
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
-  const email = searchParams.get('email');
 
   const [status, setStatus] = useState<Status>(token ? 'verifying' : 'awaiting');
   const { remaining, start } = useCooldown(60);
+  const { adoptSession, user } = useAuth();
+
+  /*
+    The address comes from the session, falling back to the query parameter.
+
+    Signup now issues a real session, so the signed-in user *is* the source of
+    truth — and reading it here means the screen shows the right address even
+    when it was reached by a redirect that carried no `?email=`. The parameter
+    is kept as a fallback for the one case with no session: arriving from the
+    emailed link in a different browser.
+  */
+  const email = user?.email ?? searchParams.get('email');
 
   useEffect(() => {
     if (!token) return;
     let cancelled = false;
 
-    void mockVerifyEmail(token).then((outcome) => {
-      if (cancelled) return;
-      setStatus(outcome === 'success' ? 'verified' : 'expired');
-    });
+    void (async () => {
+      try {
+        const session = await verifyEmail(token);
+        if (cancelled) return;
+        /*
+          Adopting the returned session is what makes the gate lift instantly.
+          Verification reissues tokens carrying `emailVerified: true`
+          (docs/04-data-and-api.md §3.3); without this the user would sit
+          behind the verification prompt until their old access token expired,
+          which reads as the link not having worked.
+        */
+        adoptSession(session);
+        setStatus('verified');
+      } catch {
+        if (cancelled) return;
+        /*
+          The server does not distinguish expired from already-consumed from
+          unknown — deliberately, since telling the holder of a stolen link
+          which it is helps only them. But the *client* can tell one case
+          apart safely: if the signed-in user is already verified, the link
+          simply did its job earlier (docs/00-product.md §8 asks for this
+          branch by name). No disclosure, because the session is proof.
+        */
+        setStatus(user?.emailVerified ? 'verified' : 'expired');
+      }
+    })();
 
     return () => {
       cancelled = true;
     };
-  }, [token]);
+    // `user` is read only inside the catch, to classify a failure. Including it
+    // would re-run verification every time the session object changes — which
+    // adopting a session does, immediately after this succeeds.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, adoptSession]);
 
   const onResend = async () => {
-    await mockResendVerification();
+    try {
+      await resendVerification();
+    } catch {
+      // The cooldown still starts: a failed resend that leaves the button
+      // live invites the rapid re-clicking the cooldown exists to prevent.
+    }
     start();
   };
 
@@ -70,8 +113,11 @@ export function VerifyEmailPage() {
         <Alert tone="success">
           You can now upload documents and start asking questions.
         </Alert>
+        {/* Straight into the app, not back to sign-in: verification returned a
+            live session, so asking for credentials again would be asking the
+            user to re-authenticate as themselves. */}
         <Button asChild variant="primary" size="lg" full className="mt-4">
-          <Link to={ROUTES.login}>
+          <Link to={ROUTES.chat}>
             <CheckCircle2 className="size-4" aria-hidden="true" />
             Continue
           </Link>

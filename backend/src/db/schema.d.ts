@@ -1,36 +1,78 @@
-import type { ColumnType } from 'kysely';
+import type { ColumnType, Generated } from 'kysely';
 
 /**
  * The Kysely schema type — the compile-time mirror of the live database.
  *
- * docs/03-backend.md §2 notes this file is generated. It is hand-written while
- * there is exactly one table, because a code generator producing eight lines is
- * a build step nobody can debug; `kysely-codegen` is wired up in M2, when the
- * identity tables land and the table count makes generation the cheaper option.
+ * docs/03-backend.md §2 describes this file as generated, and M0 said
+ * `kysely-codegen` would be wired up here. **It is not, and that is a
+ * deliberate reversal.** Generation requires a reachable database at build
+ * time, which turns `tsc` into something that fails on a laptop with Docker
+ * closed and needs a live Postgres in CI before a single type can be checked.
+ * Four hand-written tables cost less than that constraint. The file stays
+ * shaped exactly as a generator would emit it, so adopting one later is a
+ * replacement rather than a rewrite.
  *
- * `ColumnType<Select, Insert, Update>` is what encodes column behavior in the
- * type system: a database default becomes an optional insert, and an immutable
- * column becomes `never` on update, so a query that tries to change it does not
- * compile.
+ * `ColumnType<Select, Insert, Update>` encodes column behavior in the type
+ * system: a database default becomes an optional insert, and an immutable
+ * column becomes `never` on update, so a query that tries to change it does
+ * not compile.
  */
 
-/**
- * Applied migrations. Written only by the runner in `migrate.ts`, and created
- * by it rather than by a migration — a migrations table cannot bootstrap
- * itself from the mechanism it exists to record.
- */
+/** Written only by the migration runner. */
 export interface SchemaMigrationsTable {
-  /** Numeric prefix of the filename, e.g. `0001`. Sorts lexicographically. */
   version: string;
-  /** Descriptive remainder of the filename, for humans reading the table. */
   name: string;
-  /** SHA-256 of the file at apply time — detects edits to applied migrations. */
   checksum: string;
   applied_at: ColumnType<Date, string | undefined, never>;
-  /** Wall-clock duration of the apply, useful when one starts getting slow. */
   duration_ms: number;
+}
+
+export interface UsersTable {
+  id: Generated<string>;
+  email: string;
+  password_hash: string;
+  display_name: string;
+  /** `null` until verified. Nullable timestamp, not a boolean — see migration. */
+  email_verified_at: ColumnType<Date | null, string | null, string | null>;
+  token_version: Generated<number>;
+  failed_login_count: Generated<number>;
+  locked_until: ColumnType<Date | null, string | null, string | null>;
+  created_at: ColumnType<Date, string | undefined, never>;
+  updated_at: ColumnType<Date, string | undefined, string | undefined>;
+}
+
+/** Matches the CHECK constraint in 0003; a typo becomes a compile error. */
+export type RevokedReason = 'rotated' | 'logout' | 'reuse_detected' | 'password_change';
+
+export interface RefreshTokensTable {
+  id: Generated<string>;
+  user_id: string;
+  token_hash: string;
+  family_id: string;
+  parent_id: string | null;
+  expires_at: ColumnType<Date, string, never>;
+  revoked_at: ColumnType<Date | null, string | null, string | null>;
+  revoked_reason: ColumnType<RevokedReason | null, RevokedReason | null, RevokedReason | null>;
+  user_agent: string | null;
+  ip_address: string | null;
+  created_at: ColumnType<Date, string | undefined, never>;
+}
+
+export type VerificationPurpose = 'email_verification' | 'password_reset';
+
+export interface VerificationTokensTable {
+  id: Generated<string>;
+  user_id: string;
+  token_hash: string;
+  purpose: VerificationPurpose;
+  expires_at: ColumnType<Date, string, never>;
+  consumed_at: ColumnType<Date | null, string | null, string | null>;
+  created_at: ColumnType<Date, string | undefined, never>;
 }
 
 export interface DB {
   schema_migrations: SchemaMigrationsTable;
+  users: UsersTable;
+  refresh_tokens: RefreshTokensTable;
+  verification_tokens: VerificationTokensTable;
 }

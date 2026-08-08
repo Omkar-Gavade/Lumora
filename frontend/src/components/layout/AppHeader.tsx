@@ -1,7 +1,7 @@
 import { Menu as MenuIcon, PanelLeft } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useSidebar } from '@/app/providers/SidebarProvider';
-import { useSession } from '@/app/providers/SessionProvider';
+import { useAuthenticatedUser } from '@/app/providers/AuthProvider';
 import { IconButton } from '@/components/ui/IconButton';
 import { Avatar } from '@/components/ui/Avatar';
 import { Breadcrumbs } from '@/components/common/Breadcrumbs';
@@ -31,7 +31,7 @@ interface AppHeaderProps {
  */
 export function AppHeader({ onOpenPalette }: AppHeaderProps) {
   const { isMobile, collapsed, toggle } = useSidebar();
-  const { user } = useSession();
+  const user = useAuthenticatedUser();
 
   const avatarButton = (
     <button
@@ -43,7 +43,7 @@ export function AppHeader({ onOpenPalette }: AppHeaderProps) {
         'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
       )}
     >
-      <Avatar name={user.name} src={user.avatarUrl} size="md" />
+      <Avatar name={user.displayName} size="md" />
     </button>
   );
 

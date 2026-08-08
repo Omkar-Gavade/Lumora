@@ -1,7 +1,8 @@
 import { ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
-import { useSession } from '@/app/providers/SessionProvider';
+import { useAuthenticatedUser } from '@/app/providers/AuthProvider';
 import { formatBytesOf } from '@/lib/utils/format';
+import { PLACEHOLDER_USAGE } from '@/features/usage/placeholder-usage';
 import { Avatar } from '@/components/ui/Avatar';
 import { Meter } from '@/components/ui/Meter';
 import { UserDropdown } from '@/components/common/UserDropdown';
@@ -21,8 +22,9 @@ import { UserDropdown } from '@/components/common/UserDropdown';
  * the fact — and the number is the whole point.
  */
 export function SidebarAccount({ collapsed }: { collapsed: boolean }) {
-  const { user } = useSession();
-  const { usedBytes, limitBytes, documentCount } = user.storage;
+  const user = useAuthenticatedUser();
+  // Real usage arrives with `GET /users/me/usage` in M3.
+  const { usedBytes, limitBytes, documentCount } = PLACEHOLDER_USAGE;
   const ratio = limitBytes > 0 ? usedBytes / limitBytes : 0;
 
   const accountButton = (
@@ -36,15 +38,19 @@ export function SidebarAccount({ collapsed }: { collapsed: boolean }) {
         collapsed ? 'mx-auto size-10 justify-center' : 'h-12 gap-2.5 px-2',
       )}
     >
-      <Avatar name={user.name} src={user.avatarUrl} size={collapsed ? 'md' : 'lg'} />
+      <Avatar name={user.displayName} size={collapsed ? 'md' : 'lg'} />
 
       {!collapsed && (
         <>
           <span className="min-w-0 flex-1 text-left">
             <span className="block truncate text-body-sm font-medium text-primary">
-              {user.name}
+              {user.displayName}
             </span>
-            <span className="block truncate text-caption text-tertiary">{user.plan} plan</span>
+            {/* The email, not a plan. `plan` was invented by the M0 mock and has
+                no column behind it — billing is out of scope (docs/06 §2) — so
+                showing the address is both real data and better identification
+                when several accounts are in play. */}
+            <span className="block truncate text-caption text-tertiary">{user.email}</span>
           </span>
           <ChevronsUpDown
             className="size-4 shrink-0 text-tertiary transition-colors group-hover:text-secondary"
@@ -55,7 +61,7 @@ export function SidebarAccount({ collapsed }: { collapsed: boolean }) {
       )}
 
       <span className="sr-only">
-        {collapsed ? `${user.name} — account menu` : 'Open account menu'}
+        {collapsed ? `${user.displayName} — account menu` : 'Open account menu'}
       </span>
     </button>
   );

@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
-import { useSession } from '@/app/providers/SessionProvider';
+import { useAuthenticatedUser } from '@/app/providers/AuthProvider';
 import { useTheme } from '@/app/providers/ThemeProvider';
 import { formatBytesOf } from '@/lib/utils/format';
+import { PLACEHOLDER_USAGE } from '@/features/usage/placeholder-usage';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Card } from '@/components/ui/Card';
@@ -34,9 +35,10 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 }
 
 export function SettingsPage() {
-  const { user } = useSession();
+  const user = useAuthenticatedUser();
   const { preference, theme } = useTheme();
-  const { usedBytes, limitBytes, documentCount } = user.storage;
+  // Real usage arrives with `GET /users/me/usage` in M3.
+  const { usedBytes, limitBytes, documentCount } = PLACEHOLDER_USAGE;
 
   return (
     <PageContainer title="Settings" width="prose">
@@ -46,18 +48,18 @@ export function SettingsPage() {
       />
 
       <Section title="Profile">
-        <Row label="Name">{user.name}</Row>
+        <Row label="Name">{user.displayName}</Row>
         <Row label="Email">
           <span className="flex items-center gap-2">
             {user.email}
-            {user.emailVerified && (
-              <Badge variant="success" size="sm">
-                Verified
-              </Badge>
-            )}
+            {/* Both states shown. An absent badge is ambiguous — it reads as
+                "not applicable" as easily as "not done" — and unverified is
+                the state the user needs to act on. */}
+            <Badge variant={user.emailVerified ? 'success' : 'neutral'} size="sm">
+              {user.emailVerified ? 'Verified' : 'Unverified'}
+            </Badge>
           </span>
         </Row>
-        <Row label="Plan">{user.plan}</Row>
       </Section>
 
       <Section title="Appearance">
