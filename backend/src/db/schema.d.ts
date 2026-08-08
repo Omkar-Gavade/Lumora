@@ -120,6 +120,42 @@ export interface JobsTable {
   completed_at: ColumnType<Date | null, string | null, string | null>;
 }
 
+/**
+ * One retrievable passage.
+ *
+ * `content_tsv` is `never` on both insert and update: Postgres generates it and
+ * rejects any statement that supplies a value, so the type turns a runtime
+ * error into a compile error.
+ */
+export interface DocumentChunksTable {
+  id: Generated<string>;
+  document_id: string;
+  /** Denormalized tenant filter for lexical search — see migration 0005. */
+  user_id: string;
+  chunk_index: number;
+  content: string;
+  token_count: number;
+  page_number: number | null;
+  section_path: string | null;
+  char_start: number | null;
+  char_end: number | null;
+  vector_id: string | null;
+  content_tsv: ColumnType<string, never, never>;
+  created_at: ColumnType<Date, string | undefined, never>;
+}
+
+/** Append-only cost ledger; rows are never updated. */
+export interface UsageEventsTable {
+  id: Generated<string>;
+  user_id: string;
+  kind: string;
+  model: string;
+  input_tokens: Generated<number>;
+  output_tokens: Generated<number>;
+  cost_micros: ColumnType<string, string | number | undefined, never>;
+  created_at: ColumnType<Date, string | undefined, never>;
+}
+
 export interface DB {
   schema_migrations: SchemaMigrationsTable;
   users: UsersTable;
@@ -127,4 +163,6 @@ export interface DB {
   verification_tokens: VerificationTokensTable;
   documents: DocumentsTable;
   jobs: JobsTable;
+  document_chunks: DocumentChunksTable;
+  usage_events: UsageEventsTable;
 }

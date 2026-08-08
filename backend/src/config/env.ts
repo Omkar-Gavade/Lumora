@@ -179,6 +179,59 @@ const envSchema = z.object({
    */
   STORAGE_LOCAL_ROOT: z.string().min(1).default('./uploads'),
 
+  // ── Worker ─────────────────────────────────────────────────────────────────
+  /**
+   * Runs the ingestion worker in-process alongside the API
+   * (docs/03-backend.md §7: "same process in development, separate in
+   * production").
+   *
+   * Off in the test suite by default. A background poller that claims jobs on
+   * its own schedule turns every queue assertion into a race — the test suite
+   * drives the worker explicitly instead.
+   */
+  WORKER_ENABLED: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((value) => value === 'true'),
+
+  /**
+   * Jobs processed simultaneously by one worker.
+   *
+   * Two, not more, because parsing is memory-bound rather than I/O-bound: a
+   * 25 MB PDF holds its page tree, fonts, and extracted text in memory at once,
+   * and the failure mode of over-parallelising is an OOM-killed worker that
+   * strands every job it held — recoverable via the reaper, but only after a
+   * full lease expires.
+   */
+  WORKER_CONCURRENCY: z.coerce.number().int().min(1).max(32).default(2),
+
+  /**
+   * Gap between polls when the queue came back empty.
+   *
+   * A poll costs one indexed query, so this is a latency knob, not a load one:
+   * it is the delay a user sees between upload and the status leaving `queued`.
+   * The loop polls again immediately after a successful claim, so a backlog is
+   * drained at full speed regardless of this value.
+   */
+  WORKER_POLL_INTERVAL_MS: z.coerce.number().int().min(100).max(60_000).default(1_000),
+
+  /**
+   * How long a claim survives without a heartbeat before the reaper takes it
+   * back.
+   *
+   * Bounds crash recovery: a worker killed mid-job strands its documents for at
+   * most this long. It can be short because running jobs heartbeat — it needs
+   * to exceed the heartbeat interval by enough margin to survive a GC pause or
+   * a slow query, not to exceed the longest possible job.
+   */
+  WORKER_LEASE_MS: z.coerce.number().int().min(5_000).max(3_600_000).default(60_000),
+
+  /** Lease renewal cadence. Kept well under `WORKER_LEASE_MS`. */
+  WORKER_HEARTBEAT_INTERVAL_MS: z.coerce.number().int().min(1_000).max(600_000).default(15_000),
+
+  /** How often the reaper sweeps for expired leases. */
+  WORKER_REAPER_INTERVAL_MS: z.coerce.number().int().min(1_000).max(600_000).default(30_000),
+
   LOG_LEVEL: logLevelSchema.optional(),
 });
 
@@ -194,6 +247,22 @@ const envSchema = z.object({
 const REQUIRED_FOR_SMTP = ['SMTP_HOST', 'SMTP_USER', 'SMTP_PASSWORD'] as const;
 
 const envSchemaWithRules = envSchema.superRefine((value, ctx) => {
+  /*
+    A heartbeat slower than the lease guarantees the reaper steals jobs from
+    workers that are alive and making progress — the document is processed
+    twice, and the original worker's `complete` silently applies to a job
+    somebody else now owns. Caught at startup because in production it presents
+    as intermittent duplicate processing under load, which is close to
+    undiagnosable from logs alone.
+  */
+  if (value.WORKER_HEARTBEAT_INTERVAL_MS >= value.WORKER_LEASE_MS) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['WORKER_HEARTBEAT_INTERVAL_MS'],
+      message: `must be less than WORKER_LEASE_MS (${String(value.WORKER_LEASE_MS)}), or the reaper will reclaim jobs from live workers`,
+    });
+  }
+
   if (value.MAIL_DRIVER !== 'smtp') return;
 
   for (const key of REQUIRED_FOR_SMTP) {

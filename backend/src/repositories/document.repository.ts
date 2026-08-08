@@ -1,4 +1,4 @@
-import type { Insertable, Selectable } from 'kysely';
+import { sql, type Insertable, type Selectable } from 'kysely';
 import type { DocumentStatus } from '@lumora/shared';
 import type { DocumentsTable } from '../db/schema.js';
 import { db } from '../db/pool.js';
@@ -173,6 +173,94 @@ export const documentRepository = {
       .deleteFrom('documents')
       .where('id', '=', id)
       .where('user_id', '=', userId)
+      .returningAll()
+      .executeTakeFirst();
+
+    return row ? toDocument(row) : null;
+  },
+
+  /**
+   * Moves a document to the next status, **only if it is in one of the states
+   * that legally precede it**.
+   *
+   * The guard is in the `WHERE` clause rather than in a read-then-write, and
+   * that is the entire point. Two workers can hold the same document — the
+   * reaper reclaims a lease a moment before the original worker finishes, and
+   * for a few seconds both believe they own it. A read followed by an update
+   * lets both pass the check; a conditional update lets exactly one row match,
+   * and the loser learns it lost from the return value.
+   *
+   * Returns the updated row, or `null` when the guard did not match. `null` is
+   * not an error: on a retry it usually means another attempt already advanced
+   * the document, and the correct response is to stop, not to fail.
+   */
+  async transitionStatus(
+    id: string,
+    userId: string,
+    input: {
+      from: readonly DocumentStatus[];
+      to: DocumentStatus;
+      pageCount?: number | undefined;
+      tokenCount?: number | undefined;
+      processedAt?: Date | undefined;
+    },
+    executor: Executor = db,
+  ): Promise<Document | null> {
+    const row = await executor
+      .updateTable('documents')
+      .set({
+        status: input.to,
+        // Cleared on every successful transition. A stale error from a previous
+        // attempt left on a row that is now progressing would show the user a
+        // failure reason beside a live progress bar.
+        error_code: null,
+        error_message: null,
+        updated_at: sql<string>`now()`,
+        ...(input.pageCount === undefined ? {} : { page_count: input.pageCount }),
+        ...(input.tokenCount === undefined ? {} : { token_count: input.tokenCount }),
+        ...(input.processedAt === undefined
+          ? {}
+          : { processed_at: input.processedAt.toISOString() }),
+      })
+      .where('id', '=', id)
+      .where('user_id', '=', userId)
+      .where('status', 'in', input.from)
+      .returningAll()
+      .executeTakeFirst();
+
+    return row ? toDocument(row) : null;
+  },
+
+  /**
+   * Marks a document failed with the reason FR-13 requires on the row.
+   *
+   * Unguarded on the current status, unlike `transitionStatus`. A document can
+   * fail from any working state, and refusing to record a failure because the
+   * row moved underneath us would leave it stuck mid-pipeline with nothing to
+   * explain it — the one outcome worse than a wrong-looking status.
+   *
+   * Terminal states are still excluded: a `ready` document must not be dragged
+   * back to `failed` by a duplicate worker finishing late, and a second failure
+   * must not overwrite the first, which is the one the user was shown.
+   */
+  async markFailed(
+    id: string,
+    userId: string,
+    errorCode: string,
+    errorMessage: string,
+    executor: Executor = db,
+  ): Promise<Document | null> {
+    const row = await executor
+      .updateTable('documents')
+      .set({
+        status: 'failed',
+        error_code: errorCode,
+        error_message: errorMessage.slice(0, 500),
+        updated_at: sql<string>`now()`,
+      })
+      .where('id', '=', id)
+      .where('user_id', '=', userId)
+      .where('status', 'not in', ['ready', 'failed'] satisfies DocumentStatus[])
       .returningAll()
       .executeTakeFirst();
 

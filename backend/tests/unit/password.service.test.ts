@@ -81,16 +81,32 @@ describe('passwordService.verifyDummy', () => {
     await expect(passwordService.verifyDummy('')).resolves.toBeUndefined();
   });
 
+  /**
+   * The fastest of several runs.
+   *
+   * A single sample of a ~50ms operation is not a measurement of that
+   * operation — it is a measurement of that operation plus whatever else the
+   * machine was doing, and the unit project runs fully parallel. Scheduling
+   * noise only ever *adds* time, so the minimum is the closest estimate of the
+   * real cost and the only statistic here that does not drift with load.
+   */
+  async function fastestMs(work: () => Promise<unknown>, samples = 5): Promise<number> {
+    let best = Number.POSITIVE_INFINITY;
+
+    for (let run = 0; run < samples; run += 1) {
+      const start = process.hrtime.bigint();
+      await work();
+      best = Math.min(best, Number(process.hrtime.bigint() - start) / 1_000_000);
+    }
+
+    return best;
+  }
+
   it('costs a comparable amount of time to a real verification', async () => {
     const hash = await passwordService.hash(PASSWORD);
 
-    const realStart = process.hrtime.bigint();
-    await passwordService.verify(hash, 'WrongPassword123');
-    const realMs = Number((process.hrtime.bigint() - realStart) / 1_000_000n);
-
-    const dummyStart = process.hrtime.bigint();
-    await passwordService.verifyDummy('WrongPassword123');
-    const dummyMs = Number((process.hrtime.bigint() - dummyStart) / 1_000_000n);
+    const realMs = await fastestMs(() => passwordService.verify(hash, 'WrongPassword123'));
+    const dummyMs = await fastestMs(() => passwordService.verifyDummy('WrongPassword123'));
 
     // Wide band: this asserts "the expensive work happens", not a constant.
     expect(dummyMs).toBeGreaterThan(realMs * 0.4);

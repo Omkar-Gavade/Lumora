@@ -6,6 +6,7 @@ import { flushLogger, logger } from './lib/logger.js';
 import { mailProvider } from './providers/mail/mail.factory.js';
 import { LocalStorageProvider } from './providers/storage/local.storage.js';
 import { storageProvider } from './providers/storage/storage.factory.js';
+import { IngestionWorker } from './workers/ingestion.worker.js';
 
 /**
  * Process entry: load config, verify the database, listen, and shut down
@@ -26,7 +27,12 @@ import { storageProvider } from './providers/storage/storage.factory.js';
  */
 let shuttingDown = false;
 
-async function shutdown(server: Server, reason: string, exitCode = 0): Promise<void> {
+async function shutdown(
+  server: Server,
+  worker: IngestionWorker | null,
+  reason: string,
+  exitCode = 0,
+): Promise<void> {
   if (shuttingDown) return;
   shuttingDown = true;
 
@@ -53,6 +59,18 @@ async function shutdown(server: Server, reason: string, exitCode = 0): Promise<v
       server.close((error) => (error ? reject(error) : resolve()));
     });
     logger.info({}, 'HTTP server closed');
+
+    /*
+      The worker drains **after** the HTTP server closes and **before** the
+      pool does, and both halves of that ordering matter.
+
+      After the server, because a request still in flight may enqueue a job,
+      and stopping the worker first would leave it for the next deploy. Before
+      the pool, because a draining job holds connections — closing the pool
+      underneath it turns a clean drain into a job that fails on its last
+      statement and gets retried for no reason.
+    */
+    if (worker) await worker.stop();
 
     await closeDatabase();
 
@@ -131,8 +149,20 @@ async function main(): Promise<void> {
     'Lumora API listening',
   );
 
-  process.on('SIGTERM', () => void shutdown(server, 'SIGTERM'));
-  process.on('SIGINT', () => void shutdown(server, 'SIGINT'));
+  /*
+    In-process worker (docs/03-backend.md §7: "same process in development,
+    separate in production").
+
+    Set `WORKER_ENABLED=false` and run `npm run worker` to split them. Nothing
+    in the worker depends on being co-located — it shares only the connection
+    pool — so the split is a deployment decision rather than a code change,
+    and either arrangement runs the same file.
+  */
+  const worker = env.WORKER_ENABLED ? new IngestionWorker() : null;
+  worker?.start();
+
+  process.on('SIGTERM', () => void shutdown(server, worker, 'SIGTERM'));
+  process.on('SIGINT', () => void shutdown(server, worker, 'SIGINT'));
 
   /*
     Both handlers exit non-zero rather than continuing.
@@ -144,12 +174,12 @@ async function main(): Promise<void> {
   */
   process.on('unhandledRejection', (reason) => {
     logger.fatal({ err: reason }, 'Unhandled promise rejection');
-    void shutdown(server, 'unhandledRejection', 1);
+    void shutdown(server, worker, 'unhandledRejection', 1);
   });
 
   process.on('uncaughtException', (error) => {
     logger.fatal({ err: error }, 'Uncaught exception');
-    void shutdown(server, 'uncaughtException', 1);
+    void shutdown(server, worker, 'uncaughtException', 1);
   });
 }
 

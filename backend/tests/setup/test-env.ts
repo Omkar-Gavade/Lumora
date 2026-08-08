@@ -146,6 +146,17 @@ export function loadTestEnv(): void {
   process.env.MAIL_DRIVER ??= 'console';
   process.env.PASSWORD_BREACH_CHECK = 'false';
 
+  /*
+    No background worker in the suite.
+
+    A poller claiming jobs on its own one-second schedule turns every queue
+    assertion into a race: a test that enqueues a job and then asserts it is
+    `pending` fails whenever the loop happens to get there first. Tests drive
+    the worker explicitly via `runOnce`/`drain`, which is also the only way to
+    observe claim, heartbeat, failure, and dead-lettering in isolation.
+  */
+  process.env.WORKER_ENABLED = 'false';
+
   // Last, so a throw above leaves the sentinel unset and the next process
   // re-runs the guards rather than inheriting a half-applied environment.
   process.env[SENTINEL] = '1';

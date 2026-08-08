@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { API_PREFIX, request } from '../helpers/app.js';
 import { db } from '../helpers/database.js';
+import { buildDocx, type DocxBlock } from '../fixtures/docx-builder.js';
+import { buildPdf } from '../fixtures/pdf-builder.js';
 import type { DocumentDto, DocumentStatus } from '@lumora/shared';
 
 /**
@@ -12,12 +14,20 @@ import type { DocumentDto, DocumentStatus } from '@lumora/shared';
  * opposite of what it says.
  */
 export const FIXTURES = {
-  /** `%PDF-1.4` plus a minimal trailer — enough for `file-type`. */
-  pdf: (): Buffer =>
-    Buffer.from(
-      '%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n',
-      'latin1',
-    ),
+  /**
+   * A real, parseable one-page PDF with a text layer.
+   *
+   * Upgraded from a bare header in M4a. A header alone satisfies `file-type`
+   * and therefore upload validation, but the worker now opens what it stored —
+   * so a fixture that only *looks* like a PDF would make every pipeline test
+   * assert the corrupt-file path while claiming to test the happy one.
+   */
+  pdf: (lines = ['Lumora test document.', 'A second line of prose for the extractor.']): Buffer =>
+    buildPdf({ pages: [lines] }),
+
+  /** A real .docx. See `fixtures/docx-builder.ts` for why it is built, not stored. */
+  docx: (blocks: DocxBlock[] = [{ text: 'Lumora Handbook', level: 1 }, { text: 'Body prose.' }]): Buffer =>
+    buildDocx(blocks),
 
   text: (body = 'Lumora test document.\nSecond line.\n'): Buffer => Buffer.from(body, 'utf8'),
 
