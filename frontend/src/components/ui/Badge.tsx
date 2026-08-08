@@ -11,6 +11,11 @@ const badge = cva(
         outline: 'border border-line-default text-secondary',
         accent: 'bg-accent-subtle text-accent',
         success: 'bg-inset text-success',
+        // The counterpart to `success`, on the same inset surface. FR-13
+        // requires a failed document to read as failed at a glance; without
+        // this the only options were a neutral pill that says nothing or an
+        // accent one that reads as interactive.
+        danger: 'bg-inset text-danger',
       },
       size: {
         sm: 'h-5 px-2 text-micro uppercase',

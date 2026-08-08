@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ThemeProvider } from '@/app/providers/ThemeProvider';
 import { AuthProvider } from '@/app/providers/AuthProvider';
+import { QueryProvider } from '@/app/providers/QueryProvider';
 import { ProtectedRoute } from '@/app/router/ProtectedRoute';
 import { PublicOnlyRoute } from '@/app/router/PublicOnlyRoute';
 import { VerifiedRoute } from '@/app/router/VerifiedRoute';
@@ -86,6 +87,7 @@ export function App() {
         <ScrollBehavior />
         {/* Inside the router: the guards it feeds use `useLocation`, and
             session restoration is what they wait on. */}
+        <QueryProvider>
         <AuthProvider>
         <ErrorBoundary>
           <Suspense fallback={RouteFallback}>
@@ -179,6 +181,7 @@ export function App() {
           </Suspense>
         </ErrorBoundary>
         </AuthProvider>
+        </QueryProvider>
       </BrowserRouter>
     </ThemeProvider>
   );

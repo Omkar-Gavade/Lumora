@@ -1,5 +1,6 @@
 import { Router, type Express } from 'express';
 import { authRouter } from './auth.routes.js';
+import { documentRouter } from './document.routes.js';
 import { healthRouter } from './health.routes.js';
 
 /**
@@ -24,6 +25,7 @@ export function registerRoutes(app: Express): void {
 
   const api = Router();
   api.use('/auth', authRouter);
+  api.use('/documents', documentRouter);
 
   app.use(API_PREFIX, api);
 }

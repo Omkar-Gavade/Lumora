@@ -47,3 +47,29 @@ export {
   type ResetPasswordRequest,
   type VerifyEmailRequest,
 } from './schemas/auth.schemas.js';
+
+export {
+  ACCEPTED_MIME_TYPES,
+  ACCEPTED_EXTENSIONS,
+  MAX_FILE_BYTES,
+  MAX_FILES_PER_UPLOAD,
+  MAX_TOTAL_BYTES_PER_USER,
+  MAX_DOCUMENTS_PER_USER,
+  MAX_FILENAME_LENGTH,
+  type AcceptedMimeType,
+} from './constants/documents.js';
+
+export type {
+  DocumentStatus,
+  DocumentDto,
+  DocumentListDto,
+  StorageUsageDto,
+  UploadResultDto,
+} from './types/documents.js';
+
+export {
+  documentStatusSchema,
+  listDocumentsQuerySchema,
+  documentIdParamSchema,
+  type ListDocumentsQuery,
+} from './schemas/document.schemas.js';

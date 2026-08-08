@@ -11,7 +11,7 @@ import type { Transaction } from 'kysely';
  * `schema_migrations` is deliberately absent: truncating it would make the
  * next run re-apply every migration against a schema that already has them.
  */
-const OWNED_TABLES = ['users'] as const;
+const OWNED_TABLES = ['users', 'jobs'] as const;
 
 /**
  * Wipes application data between tests.
@@ -78,7 +78,9 @@ export async function withTransaction<T>(
 }
 
 /** Row counts, for asserting that a flow wrote what it claimed to. */
-export async function countRows(table: 'users' | 'refresh_tokens' | 'verification_tokens'): Promise<number> {
+export async function countRows(
+  table: 'users' | 'refresh_tokens' | 'verification_tokens' | 'documents' | 'jobs',
+): Promise<number> {
   const row = await db
     .selectFrom(table)
     .select((eb) => eb.fn.countAll<number>().as('count'))

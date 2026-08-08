@@ -78,6 +78,27 @@ export const ERROR_CODES = {
   INVALID_VERIFICATION_TOKEN: 'INVALID_VERIFICATION_TOKEN',
   /** The chosen password appears in a public breach corpus. */
   PASSWORD_BREACHED: 'PASSWORD_BREACHED',
+
+  // ── Documents ──────────────────────────────────────────────────────────────
+  /** The format is not one of PDF, DOCX, TXT, MD (FR-12). */
+  UNSUPPORTED_FILE_TYPE: 'UNSUPPORTED_FILE_TYPE',
+  /**
+   * The bytes are not what the extension or Content-Type claimed. Both are
+   * attacker-controlled; the magic bytes are not.
+   */
+  FILE_TYPE_MISMATCH: 'FILE_TYPE_MISMATCH',
+  /** Zero bytes, or bytes that decode to nothing usable. */
+  EMPTY_FILE: 'EMPTY_FILE',
+  /** Over the per-file cap (FR-16). */
+  FILE_TOO_LARGE: 'FILE_TOO_LARGE',
+  /** More than the documented maximum in one request. */
+  TOO_MANY_FILES: 'TOO_MANY_FILES',
+  /** The request carried no file at all. */
+  NO_FILE_PROVIDED: 'NO_FILE_PROVIDED',
+  /** Over the per-user total-bytes or document-count cap (FR-16). */
+  STORAGE_QUOTA_EXCEEDED: 'STORAGE_QUOTA_EXCEEDED',
+  /** Writing or reading the bytes failed. */
+  STORAGE_FAILURE: 'STORAGE_FAILURE',
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];

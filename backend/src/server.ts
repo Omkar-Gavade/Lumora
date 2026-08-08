@@ -4,6 +4,8 @@ import { APP_VERSION, SHUTDOWN_TIMEOUT_MS, env } from './config/index.js';
 import { closeDatabase, connectDatabase } from './db/pool.js';
 import { flushLogger, logger } from './lib/logger.js';
 import { mailProvider } from './providers/mail/mail.factory.js';
+import { LocalStorageProvider } from './providers/storage/local.storage.js';
+import { storageProvider } from './providers/storage/storage.factory.js';
 
 /**
  * Process entry: load config, verify the database, listen, and shut down
@@ -92,11 +94,27 @@ async function verifyMailProvider(): Promise<void> {
   );
 }
 
+/**
+ * Proves the storage root exists and is writable.
+ *
+ * **Fatal, unlike the mail check.** A document platform that cannot write
+ * bytes has no working feature to offer — every upload would accept a file,
+ * transfer it, and fail at the last step. Better to refuse to start than to
+ * look healthy while losing every upload.
+ */
+async function verifyStorageProvider(): Promise<void> {
+  if (storageProvider instanceof LocalStorageProvider) {
+    await storageProvider.verify();
+  }
+  logger.info({ driver: storageProvider.name }, 'Storage provider ready');
+}
+
 async function main(): Promise<void> {
   // Fail before listening. A process that accepts traffic and then discovers
   // it has no database is a service that reports healthy and 500s.
   await connectDatabase();
 
+  await verifyStorageProvider();
   await verifyMailProvider();
 
   const app = createApp();

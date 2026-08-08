@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { useAuthenticatedUser } from '@/app/providers/AuthProvider';
 import { useTheme } from '@/app/providers/ThemeProvider';
 import { formatBytesOf } from '@/lib/utils/format';
-import { PLACEHOLDER_USAGE } from '@/features/usage/placeholder-usage';
+import { useStorageUsage } from '@/features/documents/hooks/useDocuments';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { PageHeader } from '@/components/common/PageHeader';
 import { Card } from '@/components/ui/Card';
@@ -37,8 +37,10 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 export function SettingsPage() {
   const user = useAuthenticatedUser();
   const { preference, theme } = useTheme();
-  // Real usage arrives with `GET /users/me/usage` in M3.
-  const { usedBytes, limitBytes, documentCount } = PLACEHOLDER_USAGE;
+  const usage = useStorageUsage();
+  const usedBytes = usage.data?.usedBytes ?? 0;
+  const limitBytes = usage.data?.limitBytes ?? 0;
+  const documentCount = usage.data?.documentCount ?? 0;
 
   return (
     <PageContainer title="Settings" width="prose">

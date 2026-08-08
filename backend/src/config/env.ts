@@ -165,6 +165,20 @@ const envSchema = z.object({
     .default('true')
     .transform((value) => value === 'true'),
 
+  // ── Storage ────────────────────────────────────────────────────────────────
+  /**
+   * Only `local` exists today. S3 is one driver behind the same interface
+   * (docs/05-rag-and-chat.md §2.1); adding it here without adding a factory
+   * arm is a compile error, which is the point.
+   */
+  STORAGE_DRIVER: z.enum(['local']).default('local'),
+  /**
+   * Where the local driver writes. Never hardcoded — a container mounts a
+   * volume somewhere else, and a path baked into the source means documents
+   * land on an ephemeral filesystem.
+   */
+  STORAGE_LOCAL_ROOT: z.string().min(1).default('./uploads'),
+
   LOG_LEVEL: logLevelSchema.optional(),
 });
 

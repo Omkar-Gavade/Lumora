@@ -70,9 +70,61 @@ export interface VerificationTokensTable {
   created_at: ColumnType<Date, string | undefined, never>;
 }
 
+/** Matches the `document_status` enum; FR-13 shows this sequence to users. */
+export type DocumentStatus =
+  | 'queued'
+  | 'parsing'
+  | 'chunking'
+  | 'embedding'
+  | 'ready'
+  | 'failed';
+
+export interface DocumentsTable {
+  id: Generated<string>;
+  user_id: string;
+  filename: string;
+  original_name: string;
+  mime_type: string;
+  size_bytes: number;
+  content_hash: string;
+  storage_key: string;
+  status: Generated<DocumentStatus>;
+  error_code: string | null;
+  error_message: string | null;
+  page_count: number | null;
+  chunk_count: Generated<number>;
+  token_count: number | null;
+  embedding_model: string | null;
+  embedding_dims: number | null;
+  processed_at: ColumnType<Date | null, string | null, string | null>;
+  created_at: ColumnType<Date, string | undefined, never>;
+  updated_at: ColumnType<Date, string | undefined, string | undefined>;
+}
+
+export type JobStatus = 'pending' | 'processing' | 'completed' | 'failed';
+
+export interface JobsTable {
+  id: Generated<string>;
+  type: string;
+  /** Validated against a per-type Zod schema before it is enqueued. */
+  payload: ColumnType<unknown, string, string>;
+  status: Generated<JobStatus>;
+  priority: Generated<number>;
+  attempts: Generated<number>;
+  max_attempts: Generated<number>;
+  run_after: ColumnType<Date, string | undefined, string | undefined>;
+  locked_at: ColumnType<Date | null, string | null, string | null>;
+  locked_by: string | null;
+  error: string | null;
+  created_at: ColumnType<Date, string | undefined, never>;
+  completed_at: ColumnType<Date | null, string | null, string | null>;
+}
+
 export interface DB {
   schema_migrations: SchemaMigrationsTable;
   users: UsersTable;
   refresh_tokens: RefreshTokensTable;
   verification_tokens: VerificationTokensTable;
+  documents: DocumentsTable;
+  jobs: JobsTable;
 }

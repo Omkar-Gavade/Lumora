@@ -2,7 +2,7 @@ import { ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useAuthenticatedUser } from '@/app/providers/AuthProvider';
 import { formatBytesOf } from '@/lib/utils/format';
-import { PLACEHOLDER_USAGE } from '@/features/usage/placeholder-usage';
+import { useStorageUsage } from '@/features/documents/hooks/useDocuments';
 import { Avatar } from '@/components/ui/Avatar';
 import { Meter } from '@/components/ui/Meter';
 import { UserDropdown } from '@/components/common/UserDropdown';
@@ -23,8 +23,18 @@ import { UserDropdown } from '@/components/common/UserDropdown';
  */
 export function SidebarAccount({ collapsed }: { collapsed: boolean }) {
   const user = useAuthenticatedUser();
-  // Real usage arrives with `GET /users/me/usage` in M3.
-  const { usedBytes, limitBytes, documentCount } = PLACEHOLDER_USAGE;
+  /*
+    Real numbers, from `GET /documents/usage`.
+
+    Zeroes while the query is in flight rather than a skeleton: the meter is
+    reference information in the corner of the screen, and a shimmering bar
+    every time the sidebar mounts is more distracting than a figure that
+    settles a moment later.
+  */
+  const usage = useStorageUsage();
+  const usedBytes = usage.data?.usedBytes ?? 0;
+  const limitBytes = usage.data?.limitBytes ?? 0;
+  const documentCount = usage.data?.documentCount ?? 0;
   const ratio = limitBytes > 0 ? usedBytes / limitBytes : 0;
 
   const accountButton = (
