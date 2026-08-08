@@ -9,14 +9,17 @@ import {
   type StorageUsageDto,
   type UploadResultDto,
 } from '@lumora/shared';
+import { env } from '../../config/index.js';
 import { db } from '../../db/pool.js';
 import { toDocumentDto, type Document } from '../../domain/entities/document.js';
 import { JOB_TYPES } from '../../domain/jobs/job-types.js';
-import { NotFoundError, QuotaExceededError } from '../../domain/errors/index.js';
+import { ConflictError, NotFoundError, QuotaExceededError } from '../../domain/errors/index.js';
 import { logger } from '../../lib/logger.js';
 import { documentRepository } from '../../repositories/document.repository.js';
 import { jobRepository } from '../../repositories/job.repository.js';
 import { storageProvider } from '../../providers/storage/storage.factory.js';
+import { vectorStore } from '../../providers/vector/vector.factory.js';
+import { collectionFor } from '../../providers/vector/vector-store.interface.js';
 import { validateUpload } from './upload-validation.js';
 
 /** One file as multer hands it over. */
@@ -214,9 +217,40 @@ export const documentService = {
    *
    * Vector removal joins this in M4; the chunks and vectors do not exist yet.
    */
+  /**
+   * Deletes a document: rows, bytes, **and vectors**
+   * (docs/04-data-and-api.md §2.3).
+   *
+   * docs/04 §1.2 is explicit that there are no soft deletes — "a `deleted_at`
+   * column that retains content contradicts the privacy promise". Chunk rows
+   * go with the document by `ON DELETE CASCADE`; the vector store is a
+   * separate system and has to be told.
+   *
+   * The row is deleted first, then the derived copies. That ordering is
+   * deliberate: the row is the source of truth, so removing it is what makes
+   * the document gone as far as the product is concerned. A leftover vector or
+   * an orphan file is a cleanup failure that is logged and can be swept; a row
+   * that survives because a vector delete failed is a document the user asked
+   * to delete and can still see.
+   *
+   * Neither cleanup failure is rethrown, for that reason — but both are logged
+   * at `error`, because nothing else will crash to draw attention to them.
+   */
   async delete(userId: string, documentId: string): Promise<void> {
     const deleted = await documentRepository.deleteById(documentId, userId);
     if (!deleted) throw new NotFoundError('That document does not exist.');
+
+    try {
+      await vectorStore.deleteByDocument(
+        collectionFor(userId, env.CHROMA_COLLECTION_PREFIX),
+        documentId,
+      );
+    } catch (error) {
+      logger.error(
+        { err: error, userId, documentId },
+        'Document deleted but its vectors remain in the index',
+      );
+    }
 
     try {
       await storageProvider.delete(deleted.storageKey);
@@ -228,6 +262,62 @@ export const documentService = {
     }
 
     logger.info({ userId, documentId }, 'Document deleted');
+  },
+
+  /**
+   * Re-enqueues a document for processing (`POST /documents/:id/retry`,
+   * docs/04-data-and-api.md §2.3).
+   *
+   * Only from `failed`. A document mid-pipeline already has a job — either
+   * running or waiting on a backoff — and enqueueing a second one would put
+   * two workers on the same document, which the guarded status transitions
+   * survive but which wastes an embedding run to prove it.
+   *
+   * The reset is deliberately partial. Status goes back to `queued` and the
+   * error is cleared, but **chunks are left in place**: the pipeline is
+   * convergent, so a retry re-chunks over them idempotently, and any chunk that
+   * already has a vector is skipped by the resume query rather than paid for
+   * twice. Deleting them would throw away work that is still valid — a
+   * document that failed at embedding call 400 of 500 keeps its 400.
+   */
+  async retry(userId: string, documentId: string): Promise<DocumentDto> {
+    const document = await documentRepository.findById(documentId, userId);
+    if (!document) throw new NotFoundError('That document does not exist.');
+
+    if (document.status !== 'failed') {
+      throw new ConflictError('That document is not in a failed state.');
+    }
+
+    const requeued = await db.transaction().execute(async (trx) => {
+      /*
+        Guarded on `failed` inside the transaction, so two retry requests
+        arriving together enqueue one job rather than two. The second finds no
+        row matching the guard.
+      */
+      const reset = await documentRepository.transitionStatusFromFailed(
+        documentId,
+        userId,
+        'queued',
+        trx,
+      );
+      if (!reset) return null;
+
+      // Same transaction as the status reset — the invariant from
+      // docs/05-rag-and-chat.md §2.1: both or neither.
+      await jobRepository.enqueue(
+        JOB_TYPES.INGEST_DOCUMENT,
+        { documentId, userId },
+        trx,
+      );
+
+      return reset;
+    });
+
+    if (!requeued) throw new ConflictError('That document is not in a failed state.');
+
+    logger.info({ userId, documentId }, 'Document re-enqueued');
+
+    return toDocumentDto(requeued);
   },
 
   /** FR-16 / the sidebar meter. */

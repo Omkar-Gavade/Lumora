@@ -72,11 +72,15 @@ function testWorker(id = 'test-worker'): IngestionWorker {
 }
 
 describe('successful ingestion', () => {
-  it('takes a plain-text document from queued to chunking', async () => {
+  it('takes a plain-text document from queued to ready', async () => {
     /*
-      M4a stops at `chunking`, not `ready`. That is the honest description of
-      where the document is — parsed, waiting for a chunker that does not exist
-      yet — and `ready` would promise a document you can ask questions about.
+      The full documented sequence, end to end: queued → parsing → chunking →
+      embedding → ready (docs/05-rag-and-chat.md §1).
+
+      `ready` is asserted rather than any intermediate status because it is the
+      only one that means anything to a user — it promises a document that can
+      be asked questions, which requires chunks, embeddings, and vectors all to
+      have landed.
     */
     const user = await createVerifiedUser();
     const { documentId } = await upload(user, {
@@ -90,7 +94,7 @@ describe('successful ingestion', () => {
     await testWorker().runOnce();
 
     const after = await readStatus(documentId);
-    expect(after.status).toBe('chunking');
+    expect(after.status).toBe('ready');
     expect(after.errorCode).toBeNull();
   });
 
@@ -111,7 +115,7 @@ describe('successful ingestion', () => {
     await testWorker().runOnce();
 
     const after = await readStatus(documentId);
-    expect(after.status).toBe('chunking');
+    expect(after.status).toBe('ready');
     expect(after.pageCount).toBe(3);
     expect(after.tokenCount).toBeGreaterThan(0);
   });
@@ -129,7 +133,7 @@ describe('successful ingestion', () => {
 
     await testWorker().runOnce();
 
-    expect((await readStatus(documentId)).status).toBe('chunking');
+    expect((await readStatus(documentId)).status).toBe('ready');
   });
 
   it('parses a Markdown upload', async () => {
@@ -142,7 +146,7 @@ describe('successful ingestion', () => {
 
     await testWorker().runOnce();
 
-    expect((await readStatus(documentId)).status).toBe('chunking');
+    expect((await readStatus(documentId)).status).toBe('ready');
   });
 
   it('completes the job, so it is never claimed again', async () => {
@@ -245,10 +249,10 @@ describe('idempotency', () => {
 
     const payload = { documentId, userId: user.id };
 
-    expect(await runIngestion(payload)).toEqual({ kind: 'advanced', status: 'chunking' });
+    expect(await runIngestion(payload)).toEqual({ kind: 'advanced', status: 'ready' });
     // The second run must not drag the document back through parsing.
     expect(await runIngestion(payload)).toEqual({ kind: 'skipped', reason: 'already-processed' });
-    expect((await readStatus(documentId)).status).toBe('chunking');
+    expect((await readStatus(documentId)).status).toBe('ready');
   });
 
   it('skips a document that reached a terminal state', async () => {
@@ -318,7 +322,7 @@ describe('idempotency', () => {
     const outcomes = await Promise.all([runIngestion(payload), runIngestion(payload)]);
 
     expect(outcomes.filter((outcome) => outcome.kind === 'advanced')).toHaveLength(1);
-    expect((await readStatus(documentId)).status).toBe('chunking');
+    expect((await readStatus(documentId)).status).toBe('ready');
   });
 });
 
@@ -353,7 +357,7 @@ describe('crash recovery', () => {
     expect(await worker.runOnce()).toBe(true);
 
     // `parsing` is a legal entry state precisely so this retry can proceed.
-    expect((await readStatus(documentId)).status).toBe('chunking');
+    expect((await readStatus(documentId)).status).toBe('ready');
     expect((await jobRepository.findById(jobId))?.status).toBe('completed');
   });
 
@@ -408,7 +412,7 @@ describe('retry and dead-lettering', () => {
 
     await testWorker().runOnce();
 
-    expect((await readStatus(documentId)).status).toBe('chunking');
+    expect((await readStatus(documentId)).status).toBe('ready');
     expect((await jobRepository.findById(jobId))?.status).toBe('completed');
   });
 
@@ -523,7 +527,7 @@ describe('worker runtime', () => {
     expect(processed.reduce((total, count) => total + count, 0)).toBe(6);
 
     for (const documentId of documentIds) {
-      expect((await readStatus(documentId)).status).toBe('chunking');
+      expect((await readStatus(documentId)).status).toBe('ready');
     }
   });
 
@@ -550,7 +554,7 @@ describe('worker runtime', () => {
     // Stop is issued while the loop is live; it must not cut the job short.
     await worker.stop();
 
-    expect((await readStatus(documentId)).status).toBe('chunking');
+    expect((await readStatus(documentId)).status).toBe('ready');
     expect(await jobRepository.countPending(JOB_TYPES.INGEST_DOCUMENT)).toBe(0);
   });
 

@@ -179,6 +179,63 @@ const envSchema = z.object({
    */
   STORAGE_LOCAL_ROOT: z.string().min(1).default('./uploads'),
 
+  // ── Chunking ───────────────────────────────────────────────────────────────
+  /*
+    The parameters from docs/05-rag-and-chat.md §2.3, exposed so a corpus with
+    unusual shape can be retuned without a deploy — not so they can be guessed
+    at. The defaults are the documented ones and are the right answer for
+    ordinary prose.
+  */
+  CHUNK_SIZE: z.coerce.number().int().min(64).max(4_000).default(512),
+  CHUNK_MAX_SIZE: z.coerce.number().int().min(64).max(8_000).default(800),
+  CHUNK_MIN_SIZE: z.coerce.number().int().min(1).max(2_000).default(100),
+  /** ≈15% of the target. Where recall stops improving and storage keeps rising. */
+  CHUNK_OVERLAP: z.coerce.number().int().min(0).max(2_000).default(75),
+
+  // ── Embedding ──────────────────────────────────────────────────────────────
+  /**
+   * `fake` is a first-class option, not a test hack.
+   *
+   * It is what lets the whole ingestion pipeline — chunking, batching,
+   * indexing, status transitions — be developed and verified without an API
+   * key or a cent of spend. The alternative is a codebase where the only way
+   * to run the pipeline is to pay for it, which means it stops being run.
+   */
+  EMBEDDING_PROVIDER: z.enum(['fake', 'gemini', 'openai']).default('fake'),
+  EMBEDDING_MODEL: z.string().min(1).default('fake-embedding-001'),
+  /**
+   * Asserted against the provider's actual output, not used to configure it.
+   *
+   * docs/05-rag-and-chat.md §2.4: embedding spaces are not comparable across
+   * models. A dimension mismatch means the model changed under an index that
+   * already exists, and the symptom is confident nonsense rather than an
+   * error — so it is checked at the one moment it is still cheap to catch.
+   */
+  EMBEDDING_DIMENSIONS: z.coerce.number().int().min(1).max(8_192).default(8),
+  /** ≈96 texts per call (docs §2.4). Bounded by provider request-size limits. */
+  EMBEDDING_BATCH_SIZE: z.coerce.number().int().min(1).max(512).default(96),
+  /** Retries for a single batch, inside the job, before the job itself fails. */
+  EMBEDDING_MAX_RETRIES: z.coerce.number().int().min(0).max(10).default(3),
+
+  GEMINI_API_KEY: z.string().min(1).optional(),
+  OPENAI_API_KEY: z.string().min(1).optional(),
+
+  // ── Vector store ───────────────────────────────────────────────────────────
+  /**
+   * `pgvector` is present in the enum and stubbed, per docs/06-roadmap.md R5:
+   * "the pgvector implementation is stubbed so the interface is proven against
+   * two backends rather than shaped around one."
+   */
+  VECTOR_STORE: z.enum(['chroma', 'fake', 'pgvector']).default('fake'),
+  CHROMA_URL: z.url().default('http://localhost:8000'),
+  /**
+   * One collection per user (docs §2.5): `user_{userId}`.
+   *
+   * Prefixed so several environments can share one Chroma instance without a
+   * staging document appearing in a production answer.
+   */
+  CHROMA_COLLECTION_PREFIX: z.string().min(1).default('user_'),
+
   // ── Worker ─────────────────────────────────────────────────────────────────
   /**
    * Runs the ingestion worker in-process alongside the API
@@ -260,6 +317,59 @@ const envSchemaWithRules = envSchema.superRefine((value, ctx) => {
       code: 'custom',
       path: ['WORKER_HEARTBEAT_INTERVAL_MS'],
       message: `must be less than WORKER_LEASE_MS (${String(value.WORKER_LEASE_MS)}), or the reaper will reclaim jobs from live workers`,
+    });
+  }
+
+  /*
+    A minimum above the maximum silently produces the opposite of what both
+    numbers mean: every chunk is "undersized", so every chunk merges into its
+    neighbour until one breaches the maximum. Caught here because the symptom
+    is bad retrieval, which nobody traces back to a config file.
+  */
+  if (value.CHUNK_MIN_SIZE >= value.CHUNK_MAX_SIZE) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['CHUNK_MIN_SIZE'],
+      message: `must be less than CHUNK_MAX_SIZE (${String(value.CHUNK_MAX_SIZE)})`,
+    });
+  }
+  if (value.CHUNK_SIZE > value.CHUNK_MAX_SIZE) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['CHUNK_SIZE'],
+      message: `must not exceed CHUNK_MAX_SIZE (${String(value.CHUNK_MAX_SIZE)})`,
+    });
+  }
+  /*
+    Overlap at or above the target means each chunk carries its predecessor
+    whole, so the corpus grows without bound and every chunk is about two
+    things.
+  */
+  if (value.CHUNK_OVERLAP >= value.CHUNK_SIZE) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['CHUNK_OVERLAP'],
+      message: `must be less than CHUNK_SIZE (${String(value.CHUNK_SIZE)})`,
+    });
+  }
+
+  /*
+    A provider selected without its key boots cleanly and then fails on the
+    first document — the exact "discover it at 2am" case fail-fast exists for
+    (docs/03-backend.md §5). Named per-provider so the error says which key.
+  */
+  if (value.EMBEDDING_PROVIDER === 'gemini' && !value.GEMINI_API_KEY) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['GEMINI_API_KEY'],
+      message: 'is required when EMBEDDING_PROVIDER=gemini',
+    });
+  }
+  if (value.EMBEDDING_PROVIDER === 'openai' && !value.OPENAI_API_KEY) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['OPENAI_API_KEY'],
+      message: 'is required when EMBEDDING_PROVIDER=openai',
     });
   }
 

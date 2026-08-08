@@ -17,6 +17,8 @@ vi.mock('../../src/providers/mail/mail.factory.js', async () => {
 
 const { resetDatabase, closeTestDatabase } = await import('../helpers/database.js');
 const { resetRateLimitsForTests } = await import('../../src/api/middleware/rate-limit.js');
+const { resetVectorStoreForTests } = await import('../helpers/vector.js');
+const { closeTestServer } = await import('../helpers/app.js');
 
 /**
  * Per-test isolation for HTTP flows.
@@ -38,6 +40,9 @@ beforeEach(async () => {
   await resetDatabase();
   resetRateLimitsForTests();
   fakeMailProvider.clear();
+  // The vector store is a module-level singleton holding a Map — without this,
+  // a document indexed in one test is still indexed in the next.
+  resetVectorStoreForTests();
 });
 
 afterEach(() => {
@@ -47,6 +52,7 @@ afterEach(() => {
 });
 
 afterAll(async () => {
-  // Vitest will not exit while the pool holds open sockets.
+  // Vitest will not exit while the pool or the test server holds open sockets.
+  await closeTestServer();
   await closeTestDatabase();
 });

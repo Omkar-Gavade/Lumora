@@ -202,6 +202,18 @@ export const documentRepository = {
       to: DocumentStatus;
       pageCount?: number | undefined;
       tokenCount?: number | undefined;
+      chunkCount?: number | undefined;
+      /**
+       * Recorded on the document, not globally (docs/05-rag-and-chat.md §2.4).
+       *
+       * "Embedding spaces are not comparable across models, and querying a
+       * `text-embedding-3-small` index with a Gemini query vector returns
+       * confident nonsense." Per-document means a provider change is
+       * detectable and the affected documents can be re-indexed, rather than
+       * silently degrading every answer.
+       */
+      embeddingModel?: string | undefined;
+      embeddingDims?: number | undefined;
       processedAt?: Date | undefined;
     },
     executor: Executor = db,
@@ -218,6 +230,11 @@ export const documentRepository = {
         updated_at: sql<string>`now()`,
         ...(input.pageCount === undefined ? {} : { page_count: input.pageCount }),
         ...(input.tokenCount === undefined ? {} : { token_count: input.tokenCount }),
+        ...(input.chunkCount === undefined ? {} : { chunk_count: input.chunkCount }),
+        ...(input.embeddingModel === undefined
+          ? {}
+          : { embedding_model: input.embeddingModel }),
+        ...(input.embeddingDims === undefined ? {} : { embedding_dims: input.embeddingDims }),
         ...(input.processedAt === undefined
           ? {}
           : { processed_at: input.processedAt.toISOString() }),
@@ -261,6 +278,47 @@ export const documentRepository = {
       .where('id', '=', id)
       .where('user_id', '=', userId)
       .where('status', 'not in', ['ready', 'failed'] satisfies DocumentStatus[])
+      .returningAll()
+      .executeTakeFirst();
+
+    return row ? toDocument(row) : null;
+  },
+
+  /**
+   * Moves a `failed` document back into the pipeline (`POST /documents/:id/retry`).
+   *
+   * Separate from `transitionStatus` because this is the one legal move *out*
+   * of a terminal state, and the state machine deliberately closes `failed`
+   * to everything else. Giving retry its own method keeps that closure honest —
+   * `canTransition` still says `failed → queued` is not a pipeline transition,
+   * because it is not: it is a user action that resets the document.
+   *
+   * Guarded on `failed` in the `WHERE` clause, so two retry requests arriving
+   * together enqueue one job rather than two.
+   *
+   * `chunk_count` and the embedding fields are **not** cleared. The pipeline is
+   * convergent — a retry re-chunks over the existing rows and skips any chunk
+   * that already has a vector — so wiping them would discard work that is
+   * still valid and force a document that failed at embedding call 400 of 500
+   * to pay for all 500 again.
+   */
+  async transitionStatusFromFailed(
+    id: string,
+    userId: string,
+    to: DocumentStatus,
+    executor: Executor = db,
+  ): Promise<Document | null> {
+    const row = await executor
+      .updateTable('documents')
+      .set({
+        status: to,
+        error_code: null,
+        error_message: null,
+        updated_at: sql<string>`now()`,
+      })
+      .where('id', '=', id)
+      .where('user_id', '=', userId)
+      .where('status', '=', 'failed')
       .returningAll()
       .executeTakeFirst();
 

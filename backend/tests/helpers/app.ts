@@ -1,3 +1,4 @@
+import type { Server } from 'node:http';
 import supertest from 'supertest';
 import type TestAgent from 'supertest/lib/agent.js';
 import { createApp } from '../../src/app.js';
@@ -14,19 +15,37 @@ export { API_PREFIX } from '../../src/api/routes/index.js';
 /**
  * The Express app, built once per test file.
  *
- * `createApp()` deliberately does not listen (docs/03-backend.md §2), so
- * supertest binds an ephemeral port per request and there is no server
- * lifecycle to manage, no port to collide on, and no teardown to forget.
- *
- * Built once rather than per test because it is stateless — the state that
- * does need resetting (database, rate limits, outbox) is handled by
+ * Built once rather than per test because it is stateless — the state that does
+ * need resetting (database, rate limits, outbox, vectors) is handled by
  * `setup-integration.ts`.
  */
 const app = createApp();
 
+/**
+ * One listening server, shared by every request in the file.
+ *
+ * **This is a fix, not an optimisation.** Handing `supertest` the app object
+ * makes it `listen(0)` and close a fresh ephemeral port *per request*; a full
+ * suite run does that several hundred times, and on macOS a small fraction of
+ * those bind/close cycles fail transiently. The symptoms were a request
+ * answering `400` with an empty body, or a status that no route could have
+ * produced — surfacing as roughly one flaky test per ten full runs, always in a
+ * different file, and never reproducible in isolation.
+ *
+ * Binding once removes the churn entirely. `listen(0)` still picks a free port,
+ * so nothing collides with a developer's dev server, and `closeTestServer`
+ * releases it in the same `afterAll` that closes the database pool.
+ */
+let server: Server | null = null;
+
+function listening(): Server {
+  server ??= app.listen(0);
+  return server;
+}
+
 /** A fresh, cookie-less request. Use for anonymous endpoints. */
 export function request(): TestAgent {
-  return supertest(app);
+  return supertest(listening());
 }
 
 /**
@@ -38,7 +57,19 @@ export function request(): TestAgent {
  * detection whether it meant to or not.
  */
 export function agent(): TestAgent {
-  return supertest.agent(app);
+  return supertest.agent(listening());
+}
+
+/** Releases the port so Vitest can exit. Called once, alongside the pool close. */
+export async function closeTestServer(): Promise<void> {
+  if (server === null) return;
+
+  const instance = server;
+  server = null;
+
+  await new Promise<void>((resolve) => {
+    instance.close(() => resolve());
+  });
 }
 
 export { app };

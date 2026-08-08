@@ -63,3 +63,25 @@ documentRouter.delete(
   validate({ params: documentIdParamSchema }),
   asyncHandler(documentController.remove),
 );
+
+/**
+ * Re-enqueues a failed document (docs/04-data-and-api.md §2.3).
+ *
+ * Rate-limited on its own allowance rather than sharing the upload bucket. A
+ * document that fails for a permanent reason — a scanned PDF — will fail again
+ * on every retry, and without a limit a frustrated user clicking repeatedly
+ * schedules unbounded parse work. The allowance is generous enough that
+ * retrying every document in a batch after fixing a genuine outage is not
+ * blocked.
+ */
+documentRouter.post(
+  '/:id/retry',
+  rateLimit({
+    name: 'document-retry',
+    limit: 30,
+    windowMs: HOUR,
+    keyOf: (req) => req.actor?.userId ?? null,
+  }),
+  validate({ params: documentIdParamSchema }),
+  asyncHandler(documentController.retry),
+);

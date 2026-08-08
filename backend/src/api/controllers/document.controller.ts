@@ -93,6 +93,18 @@ export async function remove(req: Request, res: Response): Promise<void> {
   res.status(204).end();
 }
 
+/**
+ * `POST /documents/:id/retry` (docs/04-data-and-api.md §2.3).
+ *
+ * 202, matching upload: the row is reset and a job is queued, but the work has
+ * not happened. A 200 would tell the client the document is fixed, and the
+ * next poll showing `queued` would read as the retry having failed.
+ */
+export async function retry(req: Request, res: Response): Promise<void> {
+  const actor = requireActor(req);
+  res.status(202).json(await documentService.retry(actor.userId, documentIdFrom(req)));
+}
+
 /** FR-16 — the numbers behind the sidebar meter. */
 export async function usage(req: Request, res: Response): Promise<void> {
   const actor = requireActor(req);

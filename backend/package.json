@@ -27,6 +27,7 @@
   "dependencies": {
     "@lumora/shared": "*",
     "argon2": "^0.44.0",
+    "chromadb": "^3.5.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",

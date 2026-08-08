@@ -157,6 +157,21 @@ export function loadTestEnv(): void {
   */
   process.env.WORKER_ENABLED = 'false';
 
+  /*
+    Deterministic providers, forced rather than mapped.
+
+    The fake embedding provider returns the same vector for the same text on
+    every run, which is what lets a test assert that re-running the pipeline
+    writes the *same* vectors rather than merely writing some. A real provider
+    would make the suite cost money, depend on a third party's uptime, and be
+    unable to express idempotency at all.
+
+    The fake vector store is in-memory for the same reason: ingestion must be
+    verifiable without a second service running.
+  */
+  process.env.EMBEDDING_PROVIDER = 'fake';
+  process.env.VECTOR_STORE = 'fake';
+
   // Last, so a throw above leaves the sentinel unset and the next process
   // re-runs the guards rather than inheriting a half-applied environment.
   process.env[SENTINEL] = '1';
