@@ -22,7 +22,11 @@
     "format": "prettier --write \"shared/**/*.{ts,json}\" \"backend/**/*.{ts,mjs,json}\"",
     "format:check": "prettier --check \"shared/**/*.{ts,json}\" \"backend/**/*.{ts,mjs,json}\"",
     "migrate": "npm run migrate --workspace @lumora/backend",
-    "migrate:status": "npm run migrate:status --workspace @lumora/backend"
+    "migrate:status": "npm run migrate:status --workspace @lumora/backend",
+    "test": "npm run test --workspaces --if-present",
+    "test:backend": "npm run test --workspace @lumora/backend",
+    "test:frontend": "npm run test --workspace @lumora/frontend",
+    "test:coverage": "npm run test:coverage --workspace @lumora/backend"
   },
   "devDependencies": {
     "concurrently": "^9.2.1",

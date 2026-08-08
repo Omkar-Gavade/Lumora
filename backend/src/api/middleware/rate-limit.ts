@@ -4,7 +4,24 @@ import { MemoryRateLimitStore } from '../../lib/rate-limit/memory.store.js';
 import type { RateLimitStore } from '../../lib/rate-limit/store.interface.js';
 
 /** Single process, single store (docs/04-data-and-api.md §3.4). */
-const store: RateLimitStore = new MemoryRateLimitStore();
+const memoryStore = new MemoryRateLimitStore();
+const store: RateLimitStore = memoryStore;
+
+/**
+ * Clears every counter. **Test seam — nothing in the application calls this.**
+ *
+ * The limiters are keyed partly by client IP and the whole suite connects from
+ * 127.0.0.1, so without a reset the fourth signup test in a run fails on a
+ * limit the third one consumed — a test failing because of another test is the
+ * definition of a flaky suite.
+ *
+ * Exported here rather than added to `RateLimitStore` on purpose: a shared
+ * store would then have to implement "delete every limit for every client",
+ * which is not an operation that belongs on a production interface.
+ */
+export function resetRateLimitsForTests(): void {
+  memoryStore.clearAll();
+}
 
 export interface RateLimitOptions {
   /** Namespace, so two limiters never collide on the same client key. */

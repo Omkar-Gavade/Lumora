@@ -1,0 +1,24 @@
+{
+  /*
+    Type-checks the test suite.
+
+    Separate from `tsconfig.json` because that one is the *build*: it emits to
+    `dist/` with `rootDir: src`, and pulling `tests/` into it would either
+    widen the root directory or ship the test suite in the published output.
+
+    Tests are held to the same strictness as `src` — they inherit every flag.
+    A suite compiled under looser rules is a suite that can pass while
+    asserting on `any`, which is how a green test file ends up proving nothing.
+  */
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "composite": false,
+    "declaration": false,
+    // The build pins `rootDir` to `src` so `dist/` has no `src/` prefix.
+    // Nothing is emitted here, so the constraint only gets in the way.
+    "rootDir": ".",
+    "types": ["node", "vitest/globals"]
+  },
+  "include": ["src", "tests", "vitest.config.ts"]
+}

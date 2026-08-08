@@ -28,7 +28,13 @@ dotenv.config({ path: join(PACKAGE_ROOT, '.env'), quiet: true });
 
 const nodeEnvSchema = z.enum(['development', 'test', 'production']);
 
-const logLevelSchema = z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']);
+/**
+ * `silent` is pino's own level for "emit nothing" and exists here for the test
+ * suite, where a few thousand request log lines bury the assertion that
+ * actually failed. It is deliberately reachable in any environment — a
+ * developer chasing one noisy endpoint should be able to mute the rest.
+ */
+const logLevelSchema = z.enum(['silent', 'fatal', 'error', 'warn', 'info', 'debug', 'trace']);
 
 /**
  * `POSTGRES_URL`-style connection string. Checked for scheme rather than

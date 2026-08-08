@@ -51,6 +51,24 @@ export class MemoryRateLimitStore implements RateLimitStore {
     return Promise.resolve();
   }
 
+  /**
+   * Drops every window.
+   *
+   * Deliberately **not** on the `RateLimitStore` interface. A shared Redis
+   * store would have to implement it, and "delete every rate limit for every
+   * client" is not an operation that should exist on a production interface
+   * where a stray call empties the whole namespace.
+   *
+   * It lives on the in-memory implementation because that implementation is
+   * process-local, and the test suite needs it: limits are keyed partly by IP,
+   * every test connects from 127.0.0.1, and signup allows three per hour — so
+   * the fourth signup test in a run would fail on a limit the third one
+   * consumed.
+   */
+  clearAll(): void {
+    this.windows.clear();
+  }
+
   private sweep(): void {
     const now = Date.now();
     for (const [key, window] of this.windows) {

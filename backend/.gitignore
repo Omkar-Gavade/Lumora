@@ -7,3 +7,7 @@ dist
 
 # Local file storage for uploaded documents (M3). Never committed.
 uploads
+
+# Test env (gitignored)
+.env.test
+coverage
