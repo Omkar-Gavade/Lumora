@@ -1,20 +1,26 @@
 import { env } from '../../config/index.js';
 import { ConsoleMailProvider } from './console.mail.js';
 import type { MailProvider } from './mail-provider.interface.js';
+import { SmtpMailProvider } from './smtp.mail.js';
 
 /**
- * Resolves the configured driver.
+ * Resolves the configured driver — the one place a transport is chosen.
  *
- * A factory over a single implementation looks like ceremony, and would be if
- * the interface existed for its own sake. It exists because the SMTP driver is
- * a known, scheduled second implementation — and because a `switch` that the
- * compiler proves exhaustive is how adding one becomes a two-line change
- * instead of a search for every `new ConsoleMailProvider()`.
+ * The `switch` has no `default`, deliberately. `MAIL_DRIVER` is a Zod enum, so
+ * adding `'resend'` to it without adding an arm here is a compile error rather
+ * than a runtime fallback to console — which would otherwise mean a production
+ * deploy that logs verification links instead of sending them, and reports
+ * success while doing it.
+ *
+ * Adding a provider is: one file implementing `MailProvider`, one enum member,
+ * one arm. Nothing in the services changes.
  */
 export function createMailProvider(): MailProvider {
   switch (env.MAIL_DRIVER) {
     case 'console':
       return new ConsoleMailProvider();
+    case 'smtp':
+      return new SmtpMailProvider();
   }
 }
 

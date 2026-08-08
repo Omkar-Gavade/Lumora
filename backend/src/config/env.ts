@@ -113,9 +113,41 @@ const envSchema = z.object({
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().min(1).max(365).default(30),
 
   // ── Mail ───────────────────────────────────────────────────────────────────
-  /** Only `console` exists today; SMTP arrives with real delivery. */
-  MAIL_DRIVER: z.enum(['console']).default('console'),
+  /** docs/03-backend.md §5: `MAIL_DRIVER=console|smtp  SMTP_*  MAIL_FROM`. */
+  MAIL_DRIVER: z.enum(['console', 'smtp']).default('console'),
   MAIL_FROM: z.string().min(1).default('Lumora <no-reply@lumora.app>'),
+
+  /*
+    SMTP settings are `.optional()` in the base schema and made mandatory by the
+    `superRefine` below when the driver is `smtp`.
+
+    A flat `.min(1)` would force every developer running the console driver to
+    invent a fake SMTP host just to boot, which is how required-but-unused
+    variables get filled with garbage and stop meaning anything.
+  */
+  SMTP_HOST: z.string().min(1).optional(),
+  SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
+  /**
+   * `true` for implicit TLS on 465, `false` for STARTTLS on 587. When false the
+   * transport still sets `requireTLS`, so the session is encrypted either way —
+   * this only selects *when* the handshake happens, never whether.
+   */
+  SMTP_SECURE: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
+  SMTP_USER: z.string().min(1).optional(),
+  SMTP_PASSWORD: z.string().min(1).optional(),
+
+  /*
+    Three separate timeouts because they fail at three different points, and an
+    operator reading a log needs to know which one tripped: no TCP connection,
+    a connection that never greeted, or a greeting followed by silence. A
+    single timeout collapses those into one indistinguishable "it hung".
+  */
+  SMTP_CONNECTION_TIMEOUT: z.coerce.number().int().min(1_000).max(120_000).default(10_000),
+  SMTP_GREETING_TIMEOUT: z.coerce.number().int().min(1_000).max(120_000).default(10_000),
+  SMTP_SOCKET_TIMEOUT: z.coerce.number().int().min(1_000).max(120_000).default(10_000),
 
   /**
    * Checks new passwords against Have I Been Pwned's k-anonymity range API
@@ -128,6 +160,51 @@ const envSchema = z.object({
     .transform((value) => value === 'true'),
 
   LOG_LEVEL: logLevelSchema.optional(),
+});
+
+/**
+ * Cross-field rules the object schema cannot express.
+ *
+ * Selecting the SMTP driver without credentials is the one misconfiguration
+ * that would otherwise boot cleanly and then fail on the first signup — the
+ * exact "discover it at 2am" case the fail-fast rule exists for
+ * (docs/03-backend.md §5). Named per-variable so the error says which one is
+ * missing rather than "mail is misconfigured".
+ */
+const REQUIRED_FOR_SMTP = ['SMTP_HOST', 'SMTP_USER', 'SMTP_PASSWORD'] as const;
+
+const envSchemaWithRules = envSchema.superRefine((value, ctx) => {
+  if (value.MAIL_DRIVER !== 'smtp') return;
+
+  for (const key of REQUIRED_FOR_SMTP) {
+    if (!value[key]) {
+      ctx.addIssue({
+        code: 'custom',
+        path: [key],
+        message: 'is required when MAIL_DRIVER=smtp',
+      });
+    }
+  }
+
+  /*
+    Implicit TLS lives on 465 and STARTTLS on 587. Mismatching them produces a
+    connection that hangs until the socket timeout rather than a refusal, which
+    reads as "the network is slow" and costs an hour to diagnose.
+  */
+  if (value.SMTP_SECURE && value.SMTP_PORT === 587) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['SMTP_SECURE'],
+      message: 'must be false on port 587 (STARTTLS). Use port 465 for implicit TLS.',
+    });
+  }
+  if (!value.SMTP_SECURE && value.SMTP_PORT === 465) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['SMTP_SECURE'],
+      message: 'must be true on port 465 (implicit TLS). Use port 587 for STARTTLS.',
+    });
+  }
 });
 
 export type Env = z.infer<typeof envSchema> & { LOG_LEVEL: z.infer<typeof logLevelSchema> };
@@ -146,7 +223,7 @@ function formatIssues(error: z.ZodError): string {
 }
 
 function loadEnv(): Env {
-  const result = envSchema.safeParse(process.env);
+  const result = envSchemaWithRules.safeParse(process.env);
 
   if (!result.success) {
     /*

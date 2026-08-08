@@ -99,7 +99,31 @@ export const authService = {
       return { user: created, verificationToken: token };
     });
 
-    await verificationService.sendVerificationEmail(user, verificationToken);
+    /*
+      A failed send does not fail the signup.
+
+      With the console driver this could not happen; with a real SMTP transport
+      it can, and the naive `await` made an outage at the provider return 502
+      *after* the user row was committed — so retrying hit EMAIL_TAKEN and the
+      person was stranded with an account they could neither use nor recreate.
+
+      The account is already valid and, per FR-5, usable for everything except
+      uploads and chat. docs/00-product.md §160 designs for the mail never
+      arriving and answers it with the resend button, which is exactly the
+      affordance the verification prompt shows. So: log loudly, hand back the
+      session, and let the user press resend.
+
+      `resendVerification` deliberately does *not* swallow — there the user
+      asked for that one thing and is waiting to be told whether it worked.
+    */
+    try {
+      await verificationService.sendVerificationEmail(user, verificationToken);
+    } catch (error) {
+      logger.error(
+        { err: error, userId: user.id },
+        'Verification email failed to send; account created and resend available',
+      );
+    }
 
     // FR-5: the account is usable immediately, just not for uploads or chat.
     // Withholding a session until verification strands anyone whose mail is
@@ -233,7 +257,26 @@ export const authService = {
     }
 
     const token = await verificationService.issue(user, 'password_reset');
-    await verificationService.sendPasswordResetEmail(user, token);
+
+    /*
+      The send failure is swallowed, and this is a security control rather than
+      leniency.
+
+      The endpoint's whole guarantee is that a registered address and an
+      unregistered one are indistinguishable. Letting a delivery failure
+      propagate would answer 502 for an address that exists and 200 for one
+      that does not — handing back the exact oracle the uniform response was
+      built to remove, and doing it precisely when the provider is degraded and
+      an attacker is most likely to notice the difference.
+    */
+    try {
+      await verificationService.sendPasswordResetEmail(user, token);
+    } catch (error) {
+      logger.error(
+        { err: error, userId: user.id },
+        'Password reset email failed to send; responding 200 to preserve enumeration safety',
+      );
+    }
   },
 
   /**

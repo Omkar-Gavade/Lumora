@@ -3,6 +3,7 @@ import { createApp } from './app.js';
 import { APP_VERSION, SHUTDOWN_TIMEOUT_MS, env } from './config/index.js';
 import { closeDatabase, connectDatabase } from './db/pool.js';
 import { flushLogger, logger } from './lib/logger.js';
+import { mailProvider } from './providers/mail/mail.factory.js';
 
 /**
  * Process entry: load config, verify the database, listen, and shut down
@@ -64,10 +65,39 @@ async function shutdown(server: Server, reason: string, exitCode = 0): Promise<v
   process.exit(exitCode);
 }
 
+/**
+ * Checks the mail transport at boot and reports it — **without** refusing to
+ * start.
+ *
+ * The asymmetry with the database is deliberate. Without Postgres nothing
+ * works, so a failed connection is fatal. Without mail, everything except
+ * verification and password reset works perfectly, and both have a resend path
+ * (docs/00-product.md §160). Killing the process over a mail outage would take
+ * chat and documents down to protect an email nobody was waiting for.
+ *
+ * The failure is logged at `error` precisely because it is not fatal: nothing
+ * else will crash to draw attention to it.
+ */
+async function verifyMailProvider(): Promise<void> {
+  const health = await mailProvider.verify();
+
+  if (health.ok) {
+    logger.info({ driver: mailProvider.name, latencyMs: health.latencyMs }, 'Mail provider ready');
+    return;
+  }
+
+  logger.error(
+    { driver: mailProvider.name, latencyMs: health.latencyMs, reason: health.message },
+    'Mail provider unavailable — verification and password-reset emails will fail until this is fixed',
+  );
+}
+
 async function main(): Promise<void> {
   // Fail before listening. A process that accepts traffic and then discovers
   // it has no database is a service that reports healthy and 500s.
   await connectDatabase();
+
+  await verifyMailProvider();
 
   const app = createApp();
 
