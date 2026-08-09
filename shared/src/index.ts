@@ -73,3 +73,61 @@ export {
   documentIdParamSchema,
   type ListDocumentsQuery,
 } from './schemas/document.schemas.js';
+
+export {
+  VECTOR_TOP_K,
+  LEXICAL_TOP_K,
+  RRF_K,
+  FUSION_TOP_K,
+  MAX_CHUNKS_PER_DOCUMENT,
+  MAX_RESULTS,
+  CONTEXT_TOKEN_BUDGET,
+  MAX_QUERY_LENGTH,
+  MIN_QUERY_LENGTH,
+} from './constants/search.js';
+
+export type {
+  RetrievalSource,
+  AbstainReason,
+  EvidenceChunkDto,
+  EvidenceBundleDto,
+  RetrievalTimingsDto,
+} from './types/search.js';
+
+export {
+  searchQuerySchema,
+  searchFiltersSchema,
+  searchRequestSchema,
+  searchQueryParamsSchema,
+  type SearchFilters,
+  type SearchRequest,
+  type SearchQueryParams,
+} from './schemas/search.schemas.js';
+
+export type {
+  MessageStatus,
+  MessageRole,
+  CitationDto,
+  MessageDto,
+  ConversationDto,
+  ConversationListDto,
+  ConversationDetailDto,
+  TurnDto,
+  TurnSourceDto,
+} from './types/chat.js';
+
+export {
+  MAX_MESSAGE_LENGTH,
+  MAX_CONVERSATION_TITLE_LENGTH,
+  messageContentSchema,
+  createConversationSchema,
+  updateConversationSchema,
+  sendMessageSchema,
+  conversationIdParamSchema,
+  messageIdParamSchema,
+  listConversationsQuerySchema,
+  type CreateConversationRequest,
+  type UpdateConversationRequest,
+  type SendMessageRequest,
+  type ListConversationsQuery,
+} from './schemas/chat.schemas.js';

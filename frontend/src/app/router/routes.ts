@@ -17,6 +17,7 @@ export const ROUTES = {
   chat: '/app/chat',
   knowledge: '/app/knowledge',
   documents: '/app/documents',
+  search: '/app/search',
   settings: '/app/settings',
   serverError: '/500',
 } as const;

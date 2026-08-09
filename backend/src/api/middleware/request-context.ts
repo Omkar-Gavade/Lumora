@@ -42,6 +42,25 @@ function resolveRequestId(header: unknown): string {
  * (docs §4), which is what lets a user report "request req_… failed" and have
  * an engineer find it.
  */
+/**
+ * The request path **without its query string**.
+ *
+ * docs/03-backend.md §6 treats any field carrying user content as a secret,
+ * and a query string is where user content reaches a GET endpoint: `GET
+ * /search?q=…` puts the user's question about their own private documents
+ * straight into the log line. Redacting one parameter by name would only work
+ * until the next endpoint took a sensitive one, so the whole query string goes.
+ *
+ * Nothing diagnostic is lost. The route is what identifies the endpoint, and
+ * the parameters that matter for debugging — result counts, filters applied,
+ * timings — are already logged as structured fields by the handlers that read
+ * them, where they can be chosen deliberately.
+ */
+function loggablePath(req: Request): string {
+  const queryStart = req.originalUrl.indexOf('?');
+  return queryStart === -1 ? req.originalUrl : req.originalUrl.slice(0, queryStart);
+}
+
 export function requestContext(req: Request, res: Response, next: NextFunction): void {
   req.requestId = resolveRequestId(req.get(REQUEST_ID_HEADER));
   req.startedAt = process.hrtime.bigint();
@@ -49,7 +68,7 @@ export function requestContext(req: Request, res: Response, next: NextFunction):
 
   res.setHeader(REQUEST_ID_HEADER, req.requestId);
 
-  req.log.debug({ method: req.method, path: req.originalUrl }, 'Request started');
+  req.log.debug({ method: req.method, path: loggablePath(req) }, 'Request started');
 
   /*
     `finish` rather than `close`: it fires when the response has been handed to
@@ -68,7 +87,7 @@ export function requestContext(req: Request, res: Response, next: NextFunction):
     */
     const context = {
       method: req.method,
-      path: req.originalUrl,
+      path: loggablePath(req),
       status: res.statusCode,
       durationMs,
       bytes: typeof contentLength === 'string' ? Number(contentLength) : (contentLength ?? 0),

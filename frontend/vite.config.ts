@@ -24,6 +24,21 @@ export default defineConfig({
           if (/[\\/]node_modules[\\/](zod|@hookform|react-hook-form)[\\/]/.test(id)) {
             return 'forms';
           }
+          /*
+            Markdown rendering and syntax highlighting are reachable only from
+            the chat route, and together they are larger than everything else
+            in `vendor` combined. Left there, the homepage downloads a markdown
+            parser and nine language grammars to render static marketing
+            copy — and docs/06-roadmap.md M6 puts the marketing bundle under
+            120KB gzipped, which this alone would breach.
+          */
+          if (
+            /[\\/]node_modules[\\/](react-markdown|remark-.*|rehype-.*|micromark.*|mdast-.*|hast-.*|unist-.*|unified|vfile.*|highlight\.js|devlop|decode-named-character-reference|character-entities.*|property-information|space-separated-tokens|comma-separated-tokens|html-url-attributes|trim-lines|zwitch|longest-streak|ccount|escape-string-regexp|markdown-table|bail|is-plain-obj|trough|extend)[\\/]/.test(
+              id,
+            )
+          ) {
+            return 'markdown';
+          }
           return 'vendor';
         },
       },

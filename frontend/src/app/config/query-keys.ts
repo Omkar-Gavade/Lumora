@@ -12,6 +12,11 @@ export const queryKeys = {
   auth: {
     me: () => ['auth', 'me'] as const,
   },
+  conversations: {
+    all: () => ['conversations'] as const,
+    list: () => ['conversations', 'list'] as const,
+    detail: (id: string) => ['conversations', 'detail', id] as const,
+  },
   documents: {
     all: () => ['documents'] as const,
     list: (filters?: Partial<ListDocumentsQuery>) => ['documents', 'list', filters ?? {}] as const,

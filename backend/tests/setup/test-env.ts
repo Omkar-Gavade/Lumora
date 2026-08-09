@@ -171,6 +171,13 @@ export function loadTestEnv(): void {
   */
   process.env.EMBEDDING_PROVIDER = 'fake';
   process.env.VECTOR_STORE = 'fake';
+  /*
+    The chat provider too. A suite that called a real model would cost money
+    per run, depend on a third party's uptime, and produce a different answer
+    every time — which makes citation mapping, budgeting, and persistence
+    unassertable.
+  */
+  process.env.LLM_PROVIDER = 'fake';
 
   // Last, so a throw above leaves the sentinel unset and the next process
   // re-runs the guards rather than inheriting a half-applied environment.

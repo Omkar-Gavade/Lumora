@@ -1,4 +1,4 @@
-import { BookOpen, FileText, MessageSquare, Settings, type LucideIcon } from 'lucide-react';
+import { BookOpen, FileText, MessageSquare, Search, Settings, type LucideIcon } from 'lucide-react';
 import { ROUTES } from '@/app/router/routes';
 
 export interface NavItem {
@@ -47,6 +47,16 @@ export const NAV_GROUPS: NavGroup[] = [
       */
       { label: 'Knowledge Base', to: ROUTES.knowledge, icon: BookOpen, matchNested: true },
       { label: 'Documents', to: ROUTES.documents, icon: FileText, matchNested: true },
+      /*
+        The retrieval-validation surface (docs/06-roadmap.md M4).
+
+        Not in the documented page set, and added deliberately: the roadmap
+        calls the retrieval-only view "the most valuable debugging tool in the
+        project", and a tool nobody can reach is not one. It sits under
+        Workspace because it operates on the corpus, beside the documents it
+        searches.
+      */
+      { label: 'Search', to: ROUTES.search, icon: Search, matchNested: true },
     ],
   },
   {

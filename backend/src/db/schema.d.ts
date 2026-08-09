@@ -156,6 +156,69 @@ export interface UsageEventsTable {
   created_at: ColumnType<Date, string | undefined, never>;
 }
 
+export interface ConversationsTable {
+  id: Generated<string>;
+  user_id: string;
+  title: Generated<string>;
+  title_generated: Generated<boolean>;
+  /** The rolling summary from docs/05 §4.4. Not written by M6a. */
+  summary: string | null;
+  summary_upto_seq: number | null;
+  message_count: Generated<number>;
+  last_message_at: ColumnType<Date | null, string | null, string | null>;
+  archived_at: ColumnType<Date | null, string | null, string | null>;
+  created_at: ColumnType<Date, string | undefined, never>;
+  updated_at: ColumnType<Date, string | undefined, string | undefined>;
+}
+
+/** Matches the `message_role` enum. */
+export type MessageRole = 'user' | 'assistant' | 'system';
+
+/**
+ * Matches the `message_status` enum.
+ *
+ * `pending` and `streaming` exist because the row is written before the model
+ * is called (docs/05 §7 step 3) — see the migration for why.
+ */
+export type MessageStatus = 'pending' | 'streaming' | 'complete' | 'stopped' | 'failed';
+
+export interface MessagesTable {
+  id: Generated<string>;
+  conversation_id: string;
+  /** Denormalized owner — see migration 0006. */
+  user_id: string;
+  role: MessageRole;
+  content: Generated<string>;
+  status: Generated<MessageStatus>;
+  sequence: number;
+  /** Regeneration lineage; never a mutation in place. */
+  parent_id: string | null;
+  model: string | null;
+  prompt_tokens: number | null;
+  completion_tokens: number | null;
+  latency_ms: number | null;
+  finish_reason: string | null;
+  error_code: string | null;
+  created_at: ColumnType<Date, string | undefined, never>;
+}
+
+/**
+ * A citation, with the cited text frozen at answer time.
+ *
+ * No `created_at`: the row's lifetime is the message's, and a second timestamp
+ * that is always within microseconds of `messages.created_at` is a column that
+ * answers no question.
+ */
+export interface MessageCitationsTable {
+  id: Generated<string>;
+  message_id: string;
+  chunk_id: string;
+  document_id: string;
+  citation_index: number;
+  score: number;
+  content_snapshot: string;
+}
+
 export interface DB {
   schema_migrations: SchemaMigrationsTable;
   users: UsersTable;
@@ -165,4 +228,7 @@ export interface DB {
   jobs: JobsTable;
   document_chunks: DocumentChunksTable;
   usage_events: UsageEventsTable;
+  conversations: ConversationsTable;
+  messages: MessagesTable;
+  message_citations: MessageCitationsTable;
 }

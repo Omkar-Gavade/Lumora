@@ -236,6 +236,94 @@ const envSchema = z.object({
    */
   CHROMA_COLLECTION_PREFIX: z.string().min(1).default('user_'),
 
+  // ── LLM ────────────────────────────────────────────────────────────────────
+  /**
+   * `fake` is a first-class option, for the same reason it is on the embedding
+   * side: the whole chat pipeline — retrieval, prompt assembly, citation
+   * mapping, persistence — must be runnable and verifiable without an API key.
+   * A path that can only be exercised by paying for it stops being exercised.
+   */
+  LLM_PROVIDER: z.enum(['fake', 'gemini', 'openai']).default('fake'),
+  LLM_MODEL: z.string().min(1).default('fake-llm-001'),
+  /**
+   * 0, not the provider's default.
+   *
+   * This is grounded question answering: the same sources and the same
+   * question should produce the same answer. A default of 0.7 makes two
+   * identical questions disagree about what a contract says, which reads to a
+   * user as the product being unreliable rather than as creativity.
+   */
+  LLM_TEMPERATURE: z.coerce.number().min(0).max(2).default(0),
+  /** §4.1 reserves 2000 tokens for output. */
+  LLM_MAX_OUTPUT_TOKENS: z.coerce.number().int().min(64).max(32_000).default(2_000),
+  /**
+   * Total tokens the model accepts. Used to refuse an impossible prompt before
+   * paying to discover it.
+   */
+  LLM_CONTEXT_WINDOW: z.coerce.number().int().min(1_000).max(2_000_000).default(32_000),
+
+  /**
+   * An **override**, not the primary key.
+   *
+   * docs/03-backend.md §5 specifies per-provider keys (`GEMINI_API_KEY`,
+   * `OPENAI_API_KEY`), and M4b already reads both for embeddings. A single
+   * shared key is ambiguous the moment the embedding and chat providers differ
+   * — Gemini embeddings with OpenAI chat is an ordinary pairing — so this is
+   * consulted first and falls back to the documented per-provider variable.
+   */
+  LLM_API_KEY: z.string().min(1).optional(),
+
+  /**
+   * How many recent turns go into the prompt verbatim.
+   *
+   * docs/05-rag-and-chat.md §4.4: "Last 6 turns verbatim. Beyond that, a
+   * rolling summary…". This is that number. The *token* ceiling on history is
+   * separate and fixed at §4.1's 2000 — this bounds how far back to look, not
+   * how much room it may take.
+   */
+  CHAT_CONTEXT_LIMIT: z.coerce.number().int().min(0).max(50).default(6),
+
+  // ── Retrieval ──────────────────────────────────────────────────────────────
+  /**
+   * The relevance floor (docs/05-rag-and-chat.md §3.3).
+   *
+   * **The docs mandate the mechanism and never name a value**, so this default
+   * is mine and it is a placeholder, not a tuned number. §3.3's own argument
+   * says why it cannot be guessed well: the floor's job is to separate "the
+   * best of a corpus that contains nothing relevant" from a genuine match, and
+   * where that line falls depends on the embedding model in use.
+   *
+   * **`-1` disables it**, and that is the shipped default. Cosine similarity
+   * ranges over `[-1, 1]`, so only `-1` admits everything — `0` looks like a
+   * neutral "off" and is not: it silently discards every chunk whose
+   * similarity to the query is negative, which is a real threshold nobody
+   * chose. Shipping a floor before there is an eval set to choose it from
+   * would be superstition with a config key.
+   *
+   * docs/06-roadmap.md puts a hand-built evaluation set before chat ships;
+   * that is the artefact this number should be set from.
+   */
+  RETRIEVAL_MIN_SCORE: z.coerce.number().min(-1).max(1).default(-1),
+
+  /**
+   * Exposes `GET`/`POST /search`.
+   *
+   * docs/06-roadmap.md describes this as "a **development-only** endpoint that
+   * returns retrieval results without generation" — the debugging tool that
+   * makes "the answer is wrong" attributable between retrieval and generation.
+   * It is not part of the documented public API surface in
+   * docs/04-data-and-api.md §2.
+   *
+   * So it defaults **on outside production and off in production**: available
+   * where it is meant to be used, and not an undocumented public endpoint on a
+   * deployed service. An operator debugging production retrieval can turn it
+   * on deliberately.
+   */
+  SEARCH_API_ENABLED: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((value) => value === undefined ? undefined : value === 'true'),
+
   // ── Worker ─────────────────────────────────────────────────────────────────
   /**
    * Runs the ingestion worker in-process alongside the API
@@ -373,6 +461,28 @@ const envSchemaWithRules = envSchema.superRefine((value, ctx) => {
     });
   }
 
+  /*
+    The same fail-fast rule for the chat provider, honouring the override.
+
+    Checked as "either key present" rather than requiring the per-provider one,
+    because `LLM_API_KEY` is a legitimate way to configure this and demanding
+    both would make the override useless.
+  */
+  if (value.LLM_PROVIDER === 'gemini' && !value.LLM_API_KEY && !value.GEMINI_API_KEY) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['GEMINI_API_KEY'],
+      message: 'is required when LLM_PROVIDER=gemini (or set LLM_API_KEY)',
+    });
+  }
+  if (value.LLM_PROVIDER === 'openai' && !value.LLM_API_KEY && !value.OPENAI_API_KEY) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['OPENAI_API_KEY'],
+      message: 'is required when LLM_PROVIDER=openai (or set LLM_API_KEY)',
+    });
+  }
+
   if (value.MAIL_DRIVER !== 'smtp') return;
 
   for (const key of REQUIRED_FOR_SMTP) {
@@ -406,7 +516,11 @@ const envSchemaWithRules = envSchema.superRefine((value, ctx) => {
   }
 });
 
-export type Env = z.infer<typeof envSchema> & { LOG_LEVEL: z.infer<typeof logLevelSchema> };
+export type Env = z.infer<typeof envSchema> & {
+  LOG_LEVEL: z.infer<typeof logLevelSchema>;
+  /** Resolved from `NODE_ENV` when unset — see the schema for why. */
+  SEARCH_API_ENABLED: boolean;
+};
 
 /**
  * Renders a Zod failure as something an operator can act on at 3am, rather
@@ -448,6 +562,9 @@ function loadEnv(): Env {
     // Development wants to see everything; production defaults to the level
     // that is actually readable in aggregate.
     LOG_LEVEL: result.data.LOG_LEVEL ?? (result.data.NODE_ENV === 'development' ? 'debug' : 'info'),
+    // Unset means "follow the documented intent": on where the tool is meant
+    // to be used, off on a deployed service.
+    SEARCH_API_ENABLED: result.data.SEARCH_API_ENABLED ?? result.data.NODE_ENV !== 'production',
   };
 }
 

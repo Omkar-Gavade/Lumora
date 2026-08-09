@@ -66,6 +66,9 @@ const KnowledgeBasePage = lazy(() =>
 const DocumentsPage = lazy(() =>
   import('@/pages/app/DocumentsPage').then((m) => ({ default: m.DocumentsPage })),
 );
+const SearchPage = lazy(() =>
+  import('@/pages/app/SearchPage').then((m) => ({ default: m.SearchPage })),
+);
 const SettingsPage = lazy(() =>
   import('@/pages/app/SettingsPage').then((m) => ({ default: m.SettingsPage })),
 );
@@ -167,6 +170,7 @@ export function App() {
                     <Route path="chat/:conversationId" element={<ChatPage />} />
                     <Route path="knowledge" element={<KnowledgeBasePage />} />
                     <Route path="documents" element={<DocumentsPage />} />
+                    <Route path="search" element={<SearchPage />} />
                   </Route>
 
                   {/* Outside the verified gate — an unverified user must be

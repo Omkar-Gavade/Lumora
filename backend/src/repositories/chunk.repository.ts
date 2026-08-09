@@ -15,6 +15,33 @@ export interface ChunkInput {
   charEnd: number;
 }
 
+/** One lexical hit, joined to its document so a citation needs no second query. */
+export interface LexicalHit {
+  chunkId: string;
+  documentId: string;
+  documentTitle: string;
+  text: string;
+  chunkIndex: number;
+  tokenCount: number;
+  pageNumber: number | null;
+  sectionPath: string | null;
+  /** `ts_rank_cd`. Meaningful only relative to other hits for the same query. */
+  score: number;
+}
+
+/** The raw shape `searchLexical`'s SQL returns, before mapping. */
+interface LexicalRow {
+  id: string;
+  document_id: string;
+  document_title: string;
+  content: string;
+  chunk_index: number;
+  token_count: number;
+  page_number: number | null;
+  section_path: string | null;
+  rank: number | string;
+}
+
 /** A chunk row as the pipeline reads it back. */
 export interface StoredChunk {
   id: string;
@@ -208,6 +235,110 @@ export const chunkRepository = {
       .selectFrom('document_chunks')
       .select((eb) => eb.fn.countAll<number>().as('count'))
       .where('document_id', '=', documentId)
+      .executeTakeFirstOrThrow();
+
+    return row.count;
+  },
+
+  /**
+   * Lexical search over `content_tsv` — the BM25 half of hybrid retrieval
+   * (docs/05-rag-and-chat.md §3.2: "Postgres full-text over `content_tsv`,
+   * ranked with `ts_rank_cd`, `k=20`, scoped by `user_id`").
+   *
+   * Three choices in the SQL below are load-bearing:
+   *
+   * **`websearch_to_tsquery`, not `to_tsquery`.** `to_tsquery` throws a syntax
+   * error on ordinary user input — an unbalanced quote, a bare `&`, the word
+   * "and" — which would turn a normal question into a 500. `websearch_to_tsquery`
+   * accepts anything, and additionally gives the user quoted phrases, `OR`, and
+   * `-exclusion` for free.
+   *
+   * **`'english'`, matching the generated column.** `content_tsv` is
+   * `to_tsvector('english', content)`. A query parsed with a different
+   * configuration stems differently — "terminating" would not match
+   * "termination" — and the failure is silent: fewer results, no error.
+   *
+   * **`ts_rank_cd`, not `ts_rank`.** The cover-density variant accounts for how
+   * close the matched terms are to each other, so a chunk that contains
+   * "notice" and "period" adjacently outranks one that mentions them in
+   * unrelated sentences. That is the ranking §3.2 names.
+   *
+   * The join to `documents` is what makes this one round trip instead of two:
+   * the caller needs the document title for the citation, and a second query
+   * to fetch it would sit in the hot path of the most latency-sensitive
+   * operation in the product.
+   */
+  async searchLexical(
+    input: {
+      userId: string;
+      query: string;
+      limit: number;
+      documentIds?: string[] | undefined;
+    },
+    executor: Executor = db,
+  ): Promise<LexicalHit[]> {
+    /*
+      An empty filter list means "no documents", not "all documents".
+
+      Answered here rather than in SQL because `IN ()` is a syntax error and
+      `= ANY('{}')` matches nothing — both correct, neither obvious. Returning
+      early makes the intent explicit and saves a round trip.
+    */
+    if (input.documentIds?.length === 0) return [];
+
+    const documentFilter =
+      input.documentIds === undefined
+        ? sql`TRUE`
+        : sql`c.document_id = ANY(${sql.val(input.documentIds)}::uuid[])`;
+
+    const result = await sql<LexicalRow>`
+      SELECT
+        c.id,
+        c.document_id,
+        c.chunk_index,
+        c.content,
+        c.token_count,
+        c.page_number,
+        c.section_path,
+        d.filename AS document_title,
+        ts_rank_cd(c.content_tsv, q.query) AS rank
+      FROM document_chunks AS c
+      JOIN documents AS d ON d.id = c.document_id
+      CROSS JOIN websearch_to_tsquery('english', ${input.query}) AS q(query)
+      WHERE c.user_id = ${input.userId}
+        AND c.content_tsv @@ q.query
+        AND ${documentFilter}
+      ORDER BY rank DESC, c.id ASC
+      LIMIT ${input.limit}
+    `.execute(executor);
+
+    return result.rows.map((row) => ({
+      chunkId: row.id,
+      documentId: row.document_id,
+      documentTitle: row.document_title,
+      text: row.content,
+      chunkIndex: row.chunk_index,
+      tokenCount: row.token_count,
+      pageNumber: row.page_number,
+      sectionPath: row.section_path,
+      // `ts_rank_cd` comes back as a float4; the driver may hand it over as a
+      // string depending on the type parser in force.
+      score: Number(row.rank),
+    }));
+  },
+
+  /**
+   * How many chunks a user has indexed, across every document.
+   *
+   * Read only on the abstention path, to separate "you have uploaded nothing"
+   * from "your documents do not answer this" — two states that look identical
+   * in an empty result set and call for opposite product responses.
+   */
+  async countForUser(userId: string, executor: Executor = db): Promise<number> {
+    const row = await executor
+      .selectFrom('document_chunks')
+      .select((eb) => eb.fn.countAll<number>().as('count'))
+      .where('user_id', '=', userId)
       .executeTakeFirstOrThrow();
 
     return row.count;
