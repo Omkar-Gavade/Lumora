@@ -60,6 +60,23 @@ export function agent(): TestAgent {
   return supertest.agent(listening());
 }
 
+/**
+ * The origin of the shared test server.
+ *
+ * Needed by the streaming tests, which drive real `fetch` rather than
+ * supertest: supertest buffers the whole response before resolving, which
+ * makes it structurally unable to observe a stream as it arrives.
+ */
+export function baseUrl(): string {
+  const address = listening().address();
+
+  if (address === null || typeof address === 'string') {
+    throw new Error('the test server is not listening on a TCP port');
+  }
+
+  return `http://127.0.0.1:${String(address.port)}`;
+}
+
 /** Releases the port so Vitest can exit. Called once, alongside the pool close. */
 export async function closeTestServer(): Promise<void> {
   if (server === null) return;

@@ -283,6 +283,38 @@ const envSchema = z.object({
    */
   CHAT_CONTEXT_LIMIT: z.coerce.number().int().min(0).max(50).default(6),
 
+  // ── Streaming ──────────────────────────────────────────────────────────────
+  /**
+   * Hard ceiling on one generation, in milliseconds.
+   *
+   * A provider that accepts the connection and then goes quiet would otherwise
+   * hold an SSE stream, a database placeholder, and a registry entry open
+   * forever. On timeout the turn takes the abort path — partial text persisted,
+   * status `stopped` — which is the same recovery a user pressing stop gets.
+   */
+  STREAM_TIMEOUT: z.coerce.number().int().min(5_000).max(600_000).default(120_000),
+
+  /**
+   * Comment-heartbeat cadence. docs/03-backend.md §8 specifies 15s.
+   *
+   * Its job is to stop an intermediary timing out an idle connection during
+   * the gap between the request and the first token, which is the longest
+   * silence in the whole turn.
+   */
+  STREAM_HEARTBEAT_INTERVAL: z.coerce.number().int().min(1_000).max(120_000).default(15_000),
+
+  /**
+   * Bytes that may sit unflushed on the socket before the writer waits.
+   *
+   * **Not a documented variable**, and the interpretation is mine: §7 step 10
+   * says "emit each, flush", which rules out coalescing tokens, so this
+   * configures the thing a token stream genuinely needs and the docs do not
+   * cover — backpressure. Without it, a model producing faster than a client
+   * consumes accumulates the difference in process memory, which on a long
+   * answer to a phone on a slow connection is unbounded.
+   */
+  STREAM_BUFFER_SIZE: z.coerce.number().int().min(1_024).max(1_048_576).default(65_536),
+
   // ── Retrieval ──────────────────────────────────────────────────────────────
   /**
    * The relevance floor (docs/05-rag-and-chat.md §3.3).

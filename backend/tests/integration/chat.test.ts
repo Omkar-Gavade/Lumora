@@ -92,9 +92,18 @@ function promptCall(): { role: string; content: string }[] {
   return call.messages;
 }
 
+/**
+ * Runs a turn through the **non-streaming** endpoint.
+ *
+ * `POST /messages` is an SSE stream as of M6b; `/messages/sync` is the same
+ * orchestration without the transport. These tests are about what the turn
+ * decides — retrieval, prompt, citations, persistence — and asserting that
+ * through a stream parser would test the parser as much as the decision.
+ * Streaming has its own suite in `chat-stream.test.ts`.
+ */
 async function ask(user: TestUser, conversationId: string, content: string): Promise<TurnDto> {
   const response = await request()
-    .post(`${API_PREFIX}/conversations/${conversationId}/messages`)
+    .post(`${API_PREFIX}/conversations/${conversationId}/messages/sync`)
     .set(auth(user))
     .send({ content })
     .expect(201);
@@ -302,7 +311,7 @@ describe('the turn lifecycle', () => {
     fakeLLM().scriptNext(new ProviderError('fake', 'model exploded', true, 503));
 
     await request()
-      .post(`${API_PREFIX}/conversations/${conversation.id}/messages`)
+      .post(`${API_PREFIX}/conversations/${conversation.id}/messages/sync`)
       .set(auth(user))
       .send({ content: 'What is the notice period?' })
       .expect(502);
@@ -460,7 +469,7 @@ describe('the turn lifecycle', () => {
     const conversation = await newConversation(user);
 
     await request()
-      .post(`${API_PREFIX}/conversations/${conversation.id}/messages`)
+      .post(`${API_PREFIX}/conversations/${conversation.id}/messages/sync`)
       .set(auth(user))
       .send({ content: '   ' })
       .expect(422);
@@ -472,7 +481,7 @@ describe('the turn lifecycle', () => {
     const conversation = await newConversation(owner);
 
     await request()
-      .post(`${API_PREFIX}/conversations/${conversation.id}/messages`)
+      .post(`${API_PREFIX}/conversations/${conversation.id}/messages/sync`)
       .set(auth(stranger))
       .send({ content: 'What is the notice period?' })
       .expect(404);
@@ -580,7 +589,7 @@ describe('conversation history', () => {
 
     fakeLLM().scriptNext(new ProviderError('fake', 'down', true, 503));
     await request()
-      .post(`${API_PREFIX}/conversations/${conversation.id}/messages`)
+      .post(`${API_PREFIX}/conversations/${conversation.id}/messages/sync`)
       .set(auth(user))
       .send({ content: 'first question' })
       .expect(502);

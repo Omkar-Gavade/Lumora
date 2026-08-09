@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { MessageSquare, Send } from 'lucide-react';
-import { MAX_MESSAGE_LENGTH, type TurnDto } from '@lumora/shared';
+import { ArrowDown, MessageSquare, Send, Square } from 'lucide-react';
+import { MAX_MESSAGE_LENGTH } from '@lumora/shared';
 import { ROUTES, buildRoute } from '@/app/router/routes';
 import { messageForError } from '@/constants/messages';
 import { PageContainer } from '@/components/layout/PageContainer';
@@ -11,13 +11,14 @@ import { Alert } from '@/components/ui/Alert';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { ConversationList } from '@/features/chat/components/ConversationList';
 import { MessageBubble } from '@/features/chat/components/MessageBubble';
+import { StreamingMessage } from '@/features/chat/components/StreamingMessage';
+import { useStreamingTurn } from '@/features/chat/hooks/useStreamingTurn';
 import {
   useConversation,
   useConversations,
   useCreateConversation,
   useDeleteConversation,
   useRenameConversation,
-  useSendMessage,
 } from '@/features/chat/hooks/useChat';
 
 /**
@@ -37,24 +38,43 @@ export function ChatPage() {
   const create = useCreateConversation();
   const rename = useRenameConversation();
   const remove = useDeleteConversation();
-  const send = useSendMessage();
+  const stream = useStreamingTurn();
 
   const [draft, setDraft] = useState('');
-  /**
-   * The turn just answered, tagged with the thread it belongs to.
-   *
-   * Tagged rather than cleared by an effect on `conversationId`: setting state
-   * from an effect costs an extra render and, for one frame, shows the previous
-   * thread's sources under the new thread's messages. Comparing the tag at
-   * render is both correct and free.
-   */
-  const [lastTurn, setLastTurn] = useState<{ conversationId: string; turn: TurnDto } | null>(null);
-  const currentTurn = lastTurn !== null && lastTurn.conversationId === conversationId ? lastTurn.turn : null;
+  /** Set when the user scrolls up mid-stream — see the pill below. */
+  const [detached, setDetached] = useState(false);
+  /*
+    The live turn is shown only on the thread it belongs to.
+
+    Switching conversations mid-stream must not paint the previous thread's
+    tokens into the new one — the generation keeps running on the server (and
+    is still persisted), but this view stops claiming it belongs here.
+  */
+  const liveTurn = stream.streamingFor === conversationId ? stream.turn : null;
+
+  /*
+    The live turn and the persisted thread must never both be on screen.
+
+    While generating, the thread's own rows are a `pending` placeholder with no
+    text, so the live turn is the only thing worth showing. Once `done` lands
+    the thread refetches and becomes the source of truth — but the refetch is
+    not instant, and dropping the live turn the moment the stream ends would
+    blank the answer for a frame. Holding it until the refetch settles closes
+    that gap without ever rendering the answer twice.
+  */
+  const showLiveTurn = liveTurn !== null && (stream.isStreaming || thread.isFetching);
 
   const threadRef = useRef<HTMLDivElement>(null);
   const atBottomRef = useRef(true);
 
-  const messages = thread.data?.messages ?? [];
+  /*
+    Placeholders are filtered out: an assistant row that is still `pending` or
+    `streaming` has no text, and rendering it beside the live turn would show
+    an empty bubble under the answer being written.
+  */
+  const messages = (thread.data?.messages ?? []).filter(
+    (message) => message.status !== 'pending' && message.status !== 'streaming',
+  );
 
   /*
     Auto-scroll, but only when the user is already at the bottom.
@@ -71,7 +91,7 @@ export function ChatPage() {
     if (element === null) return;
 
     element.scrollTop = element.scrollHeight;
-  }, [messages.length, send.isPending]);
+  }, [messages.length, liveTurn?.text, stream.isStreaming]);
 
   const onSend = async (content: string) => {
     const trimmed = content.trim();
@@ -93,16 +113,36 @@ export function ChatPage() {
 
     setDraft('');
     atBottomRef.current = true;
+    setDetached(false);
 
-    const turn = await send.mutateAsync({ conversationId: targetId, content: trimmed });
-    setLastTurn({ conversationId: targetId, turn });
+    await stream.start({ conversationId: targetId, content: trimmed });
   };
 
+  /** Re-asks the last question — the Retry in §8.3's failed and stopped states. */
   const retryLast = () => {
     const lastQuestion = [...messages].reverse().find((message) => message.role === 'user');
     if (lastQuestion === undefined) return;
 
     void onSend(lastQuestion.content);
+  };
+
+  /**
+   * Asks for a different answer to the same question (§7 regeneration).
+   *
+   * Distinct from retry: retry re-sends the question as a new turn, regenerate
+   * replaces one answer while keeping its lineage. Offered on the last
+   * assistant turn, matching docs/00-product.md §8.3.
+   */
+  const regenerate = (messageId: string) => {
+    if (conversationId === undefined) return;
+
+    atBottomRef.current = true;
+    setDetached(false);
+    void stream.start({ conversationId, content: '', regenerateFrom: messageId });
+  };
+
+  const stopGenerating = () => {
+    if (conversationId !== undefined) stream.stop(conversationId);
   };
 
   return (
@@ -139,16 +179,22 @@ export function ChatPage() {
             ref={threadRef}
             onScroll={(event) => {
               const element = event.currentTarget;
-              // 32px of slack: an exact comparison is false while a smooth
-              // scroll is still settling, which detaches autoscroll for no
-              // reason.
-              atBottomRef.current =
-                element.scrollHeight - element.scrollTop - element.clientHeight < 32;
+              /*
+                §8.3: "follow the stream only while the viewport is within
+                100px of the bottom. The moment the user scrolls up, autoscroll
+                detaches and a 'Jump to latest ↓' pill appears. Autoscroll
+                never yanks the viewport away from something being read."
+              */
+              const atBottom =
+                element.scrollHeight - element.scrollTop - element.clientHeight < 100;
+
+              atBottomRef.current = atBottom;
+              setDetached(!atBottom);
             }}
             className="min-h-0 flex-1 overflow-y-auto"
           >
             <div className="mx-auto max-w-3xl space-y-6 px-4 py-6 sm:px-6">
-              {conversationId === undefined && messages.length === 0 && !send.isPending && (
+              {conversationId === undefined && messages.length === 0 && liveTurn === null && (
                 <EmptyState
                   icon={MessageSquare}
                   titleAs="h1"
@@ -179,29 +225,84 @@ export function ChatPage() {
                   // turns keep their citations (which are persisted); the full
                   // candidate list is not, and inventing one would be a claim
                   // about what the model saw that is not true.
-                  sources={
-                    currentTurn?.assistantMessage.id === message.id ? currentTurn.sources : undefined
-                  }
                   onRetry={
                     message.role === 'assistant' && index === messages.length - 1
-                      ? retryLast
+                      ? message.status === 'failed'
+                        ? retryLast
+                        : () => regenerate(message.id)
                       : undefined
                   }
-                  retrying={send.isPending}
+                  retrying={stream.isStreaming}
                 />
               ))}
 
-              {send.isPending && (
-                <div className="space-y-2" aria-busy="true" aria-label="Generating an answer">
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-2/3" />
-                </div>
-              )}
+              {showLiveTurn && liveTurn !== null && (
+                <>
+                  {/*
+                    The optimistic question, echoed before the server confirms
+                    it. A regenerate has no new question, so it is omitted.
+                  */}
+                  {liveTurn.question.length > 0 && (
+                    <div className="flex justify-end">
+                      <div className="max-w-[85%] rounded-lg bg-inset px-3.5 py-2.5 text-body-sm text-primary">
+                        <p className="whitespace-pre-wrap break-words">{liveTurn.question}</p>
+                      </div>
+                    </div>
+                  )}
 
-              {send.isError && <Alert tone="error">{messageForError(send.error)}</Alert>}
+                  <StreamingMessage
+                    text={liveTurn.text}
+                    phase={liveTurn.phase}
+                    sourceCount={liveTurn.sources.length}
+                    streaming={stream.isStreaming}
+                  />
+
+                  {/*
+                    §8.3: "Stopped by user: partial answer persisted with a
+                    subtle 'Stopped' label."
+                  */}
+                  {liveTurn.finishReason === 'aborted' && (
+                    <p className="text-caption text-tertiary">Stopped</p>
+                  )}
+
+                  {liveTurn.error !== null && (
+                    <Alert tone="error">
+                      {liveTurn.error}{' '}
+                      <button
+                        type="button"
+                        onClick={retryLast}
+                        className="cursor-pointer underline underline-offset-2"
+                      >
+                        Retry
+                      </button>
+                    </Alert>
+                  )}
+                </>
+              )}
             </div>
           </div>
+
+          {/*
+            The detach pill. Only while a stream is live — on a settled thread
+            the scrollbar already says where you are.
+          */}
+          {detached && stream.isStreaming && (
+            <div className="pointer-events-none relative">
+              <button
+                type="button"
+                onClick={() => {
+                  atBottomRef.current = true;
+                  setDetached(false);
+                  const element = threadRef.current;
+                  if (element !== null) element.scrollTop = element.scrollHeight;
+                }}
+                className="pointer-events-auto absolute -top-12 left-1/2 flex -translate-x-1/2 cursor-pointer items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-caption text-secondary shadow-sm hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              >
+                <ArrowDown className="size-3.5" strokeWidth={1.5} aria-hidden="true" />
+                Jump to latest
+              </button>
+            </div>
+          )}
 
           <div className="border-t border-line px-4 py-3 sm:px-6">
             <form
@@ -215,8 +316,20 @@ export function ChatPage() {
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
                 onKeyDown={(event) => {
-                  // Enter sends, Shift+Enter breaks the line — the convention
-                  // every chat surface uses, and the one users try first.
+                  /*
+                    §8.3: "`⌘↵`/`Enter` sends (Enter-to-send with `Shift+Enter`
+                    for newline — the chat convention)."
+
+                    Escape stops a live generation, so the most common thing a
+                    user wants mid-stream is one key away rather than a mouse
+                    trip to the button.
+                  */
+                  if (event.key === 'Escape' && stream.isStreaming) {
+                    event.preventDefault();
+                    stopGenerating();
+                    return;
+                  }
+
                   if (event.key === 'Enter' && !event.shiftKey) {
                     event.preventDefault();
                     void onSend(draft);
@@ -226,13 +339,27 @@ export function ChatPage() {
                 maxLength={MAX_MESSAGE_LENGTH}
                 placeholder="Ask a question about your documents…"
                 aria-label="Your question"
-                disabled={send.isPending}
-                className="max-h-40 min-h-[2.5rem] flex-1 resize-none rounded-md border border-line bg-surface px-3 py-2 text-body-sm text-primary outline-none placeholder:text-tertiary focus-visible:border-focus disabled:opacity-60"
+                className="max-h-40 min-h-[2.5rem] flex-1 resize-none rounded-md border border-line bg-surface px-3 py-2 text-body-sm text-primary outline-none placeholder:text-tertiary focus-visible:border-focus"
               />
-              <Button type="submit" disabled={draft.trim().length === 0 || send.isPending}>
-                <Send className="size-4" strokeWidth={1.5} aria-hidden="true" />
-                <span className="sr-only sm:not-sr-only">Send</span>
-              </Button>
+
+              {/*
+                §8.3: "a send button that becomes a stop button during
+                generation." One control, because a separate stop button is
+                dead weight for the 99% of the time nothing is generating — and
+                the thing a user reaches for mid-stream is exactly where they
+                just clicked send.
+              */}
+              {stream.isStreaming ? (
+                <Button type="button" variant="secondary" onClick={stopGenerating}>
+                  <Square className="size-3.5 fill-current" strokeWidth={1.5} aria-hidden="true" />
+                  <span className="sr-only sm:not-sr-only">Stop</span>
+                </Button>
+              ) : (
+                <Button type="submit" disabled={draft.trim().length === 0}>
+                  <Send className="size-4" strokeWidth={1.5} aria-hidden="true" />
+                  <span className="sr-only sm:not-sr-only">Send</span>
+                </Button>
+              )}
             </form>
           </div>
         </div>

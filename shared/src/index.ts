@@ -125,9 +125,22 @@ export {
   sendMessageSchema,
   conversationIdParamSchema,
   messageIdParamSchema,
+  regenerateParamSchema,
   listConversationsQuerySchema,
   type CreateConversationRequest,
   type UpdateConversationRequest,
   type SendMessageRequest,
   type ListConversationsQuery,
 } from './schemas/chat.schemas.js';
+
+export type {
+  StreamPhase,
+  StreamStatusEvent,
+  StreamSourcesEvent,
+  StreamTokenEvent,
+  StreamCitationEvent,
+  StreamTitleEvent,
+  StreamDoneEvent,
+  StreamErrorEvent,
+  ChatStreamEvent,
+} from './types/stream.js';

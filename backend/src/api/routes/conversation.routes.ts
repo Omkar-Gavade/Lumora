@@ -1,5 +1,6 @@
 import {
   conversationIdParamSchema,
+  regenerateParamSchema,
   createConversationSchema,
   listConversationsQuerySchema,
   messageIdParamSchema,
@@ -63,16 +64,61 @@ conversationRouter.delete(
  * expensive operation in the product. Keyed by user rather than IP: an office
  * behind one NAT would otherwise share a single allowance.
  */
+const chatRateLimit = rateLimit({
+  name: 'chat-messages',
+  limit: 30,
+  windowMs: HOUR,
+  keyOf: (req) => req.actor?.userId ?? null,
+});
+
+/**
+ * The SSE turn (docs/04-data-and-api.md §2.4).
+ *
+ * Rate limiting runs **before** the stream opens. A 429 delivered as an
+ * `error` event inside a 200 stream would be invisible to every generic HTTP
+ * client and to the browser's own network panel.
+ */
 conversationRouter.post(
   '/:id/messages',
-  rateLimit({
-    name: 'chat-messages',
-    limit: 30,
-    windowMs: HOUR,
-    keyOf: (req) => req.actor?.userId ?? null,
-  }),
+  chatRateLimit,
+  validate({ params: conversationIdParamSchema, body: sendMessageSchema }),
+  asyncHandler(conversationController.streamMessage),
+);
+
+/**
+ * The non-streaming turn.
+ *
+ * Not in docs §2.4, and kept deliberately: it is the same orchestration
+ * without the transport, which makes it the tool for reproducing a bad answer
+ * with `curl` and no stream parser — the same argument docs/06-roadmap.md
+ * makes for the retrieval-only endpoint. Same rate limit, because it costs the
+ * same completion.
+ */
+conversationRouter.post(
+  '/:id/messages/sync',
+  chatRateLimit,
   validate({ params: conversationIdParamSchema, body: sendMessageSchema }),
   asyncHandler(conversationController.sendMessage),
+);
+
+/**
+ * Stop, and regenerate.
+ *
+ * Stop is deliberately **not** rate-limited: it reduces load rather than
+ * causing it, and a user who cannot stop a generation they are paying for is
+ * the worst possible thing to throttle.
+ */
+conversationRouter.post(
+  '/:id/stop',
+  validate({ params: conversationIdParamSchema }),
+  asyncHandler(conversationController.stopGeneration),
+);
+
+conversationRouter.post(
+  '/:id/messages/:messageId/regenerate',
+  chatRateLimit,
+  validate({ params: regenerateParamSchema }),
+  asyncHandler(conversationController.regenerate),
 );
 
 /**

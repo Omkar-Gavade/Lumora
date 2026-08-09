@@ -19,6 +19,7 @@ const { resetDatabase, closeTestDatabase } = await import('../helpers/database.j
 const { resetRateLimitsForTests } = await import('../../src/api/middleware/rate-limit.js');
 const { resetVectorStoreForTests } = await import('../helpers/vector.js');
 const { closeTestServer } = await import('../helpers/app.js');
+const { resetAbortRegistryForTests } = await import('../../src/services/chat/abort-registry.js');
 
 /**
  * Per-test isolation for HTTP flows.
@@ -43,6 +44,9 @@ beforeEach(async () => {
   // The vector store is a module-level singleton holding a Map — without this,
   // a document indexed in one test is still indexed in the next.
   resetVectorStoreForTests();
+  // A generation left registered by a previous test would be aborted by the
+  // next test's stop, or would supersede its stream.
+  resetAbortRegistryForTests();
 });
 
 afterEach(() => {

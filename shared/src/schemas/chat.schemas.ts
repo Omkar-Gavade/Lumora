@@ -59,6 +59,12 @@ export const messageIdParamSchema = z.object({
   id: z.uuid('That message id is not valid.'),
 });
 
+/** `POST /conversations/:id/messages/:messageId/regenerate`. */
+export const regenerateParamSchema = z.object({
+  id: z.uuid('That conversation id is not valid.'),
+  messageId: z.uuid('That message id is not valid.'),
+});
+
 export const listConversationsQuerySchema = z.object({
   cursor: z.string().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(30),
