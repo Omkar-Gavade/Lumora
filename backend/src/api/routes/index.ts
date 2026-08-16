@@ -6,6 +6,7 @@ import { conversationRouter, messageRouter } from './conversation.routes.js';
 import { documentRouter } from './document.routes.js';
 import { healthRouter } from './health.routes.js';
 import { searchRouter } from './search.routes.js';
+import { userRouter } from './user.routes.js';
 
 /**
  * The single place routes are attached to the application.
@@ -29,6 +30,7 @@ export function registerRoutes(app: Express): void {
 
   const api = Router();
   api.use('/auth', authRouter);
+  api.use('/users', userRouter);
   api.use('/documents', documentRouter);
   api.use('/conversations', conversationRouter);
   // Mounted at the root of the API rather than under a conversation, matching

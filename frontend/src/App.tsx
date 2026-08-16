@@ -5,7 +5,6 @@ import { AuthProvider } from '@/app/providers/AuthProvider';
 import { QueryProvider } from '@/app/providers/QueryProvider';
 import { ProtectedRoute } from '@/app/router/ProtectedRoute';
 import { PublicOnlyRoute } from '@/app/router/PublicOnlyRoute';
-import { VerifiedRoute } from '@/app/router/VerifiedRoute';
 import { ScrollBehavior } from '@/app/router/ScrollBehavior';
 import { ROUTES } from '@/app/router/routes';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
@@ -133,10 +132,9 @@ export function App() {
                 renders the shell skeleton rather than redirecting, which is
                 what prevents the flash-to-login-and-back on every reload.
 
-                `VerifiedRoute` sits *inside*, around chat, knowledge, and
-                documents only. FR-5: an unverified user keeps the shell and
-                Settings — so they can change their password or sign out — and
-                is blocked from just the two expensive actions.
+                There is one guard, not two. The verification gate that used
+                to wrap chat, knowledge, and documents is gone with its backend
+                counterpart — signed in is the only question the router asks.
 
                 The shell renders its own 404 rather than falling through to
                 the marketing one: a signed-in user who mistypes a URL should
@@ -165,16 +163,11 @@ export function App() {
                 >
                   <Route index element={<Navigate to={ROUTES.chat} replace />} />
 
-                  <Route element={<VerifiedRoute />}>
-                    <Route path="chat" element={<ChatPage />} />
-                    <Route path="chat/:conversationId" element={<ChatPage />} />
-                    <Route path="knowledge" element={<KnowledgeBasePage />} />
-                    <Route path="documents" element={<DocumentsPage />} />
-                    <Route path="search" element={<SearchPage />} />
-                  </Route>
-
-                  {/* Outside the verified gate — an unverified user must be
-                      able to reach their account. */}
+                  <Route path="chat" element={<ChatPage />} />
+                  <Route path="chat/:conversationId" element={<ChatPage />} />
+                  <Route path="knowledge" element={<KnowledgeBasePage />} />
+                  <Route path="documents" element={<DocumentsPage />} />
+                  <Route path="search" element={<SearchPage />} />
                   <Route path="settings" element={<SettingsPage />} />
                   <Route path="*" element={<AppNotFoundPage />} />
                 </Route>

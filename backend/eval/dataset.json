@@ -1,0 +1,295 @@
+{
+  "version": 1,
+  "corpus": {
+    "documents": [
+      "00-product.md",
+      "01-design-system.md",
+      "02-frontend.md",
+      "03-backend.md",
+      "04-data-and-api.md",
+      "README.md"
+    ],
+    "note": "05-rag-and-chat.md and 06-roadmap.md exist in docs/ but are NOT in this index — Gemini free-tier embedding quota blocked them during seeding. Cases whose evidence lives only in those two files are marked kind=off-corpus-current-index and are expected to abstain against THIS index while being answerable against the full one. They are kept separate from genuinely unanswerable cases so the two are never confused."
+  },
+  "notes": "Expected evidence names the document a correct answer must cite. Every fact below was read out of the file named, not recalled. Cases carry no expected answer text: this harness measures retrieval and abstention, and an expected-answer string would invite grading a model against one phrasing of a correct answer.",
+  "cases": [
+    {
+      "id": "rate-limit-login",
+      "kind": "factual",
+      "query": "What is the rate limit on the login endpoint?",
+      "expectedDocuments": ["04-data-and-api.md"],
+      "expectAbstain": false
+    },
+    {
+      "id": "rate-limit-global",
+      "kind": "factual",
+      "query": "What is the global per-IP rate limit?",
+      "expectedDocuments": ["04-data-and-api.md"],
+      "expectAbstain": false
+    },
+    {
+      "id": "rate-limit-uploads",
+      "kind": "section-specific",
+      "query": "How many documents can a user upload per hour?",
+      "expectedDocuments": ["04-data-and-api.md"],
+      "expectAbstain": false
+    },
+    {
+      "id": "password-hashing",
+      "kind": "factual",
+      "query": "How are passwords hashed?",
+      "expectedDocuments": ["04-data-and-api.md", "03-backend.md"],
+      "expectAbstain": false
+    },
+    {
+      "id": "breach-check",
+      "kind": "citation-sensitive",
+      "query": "How is a new password checked against breached password lists without sending it anywhere?",
+      "expectedDocuments": ["04-data-and-api.md"],
+      "expectAbstain": false
+    },
+    {
+      "id": "reset-token-ttl",
+      "kind": "factual",
+      "query": "How long is a password reset token valid and can it be reused?",
+      "expectedDocuments": ["04-data-and-api.md"],
+      "expectAbstain": false
+    },
+    {
+      "id": "verification-token-ttl",
+      "kind": "factual",
+      "query": "What is the TTL of an email verification token?",
+      "expectedDocuments": ["04-data-and-api.md"],
+      "expectAbstain": false
+    },
+    {
+      "id": "reset-revokes-sessions",
+      "kind": "multi-chunk",
+      "query": "What happens to existing sessions and access tokens when a password is reset?",
+      "expectedDocuments": ["04-data-and-api.md"],
+      "expectAbstain": false
+    },
+    {
+      "id": "forgot-password-response",
+      "kind": "adversarial",
+      "query": "Does forgot-password reveal whether an account exists?",
+      "expectedDocuments": ["04-data-and-api.md"],
+      "expectAbstain": false
+    },
+    {
+      "id": "users-me-endpoints",
+      "kind": "section-specific",
+      "query": "Which endpoints exist under /users/me?",
+      "expectedDocuments": ["04-data-and-api.md"],
+      "expectAbstain": false
+    },
+    {
+      "id": "error-response-shape",
+      "kind": "factual",
+      "query": "What status code does a Zod validation error produce and what is returned for an unrecognized error?",
+      "expectedDocuments": ["03-backend.md"],
+      "expectAbstain": false
+    },
+    {
+      "id": "why-kysely",
+      "kind": "multi-chunk",
+      "query": "Why was Kysely chosen instead of Prisma or TypeORM?",
+      "expectedDocuments": ["03-backend.md"],
+      "expectAbstain": false
+    },
+    {
+      "id": "validate-replaces-body",
+      "kind": "citation-sensitive",
+      "query": "Why does the validate middleware replace req.body rather than just checking it?",
+      "expectedDocuments": ["03-backend.md"],
+      "expectAbstain": false
+    },
+    {
+      "id": "job-claiming",
+      "kind": "factual",
+      "query": "What Postgres locking clause is used to claim background jobs?",
+      "expectedDocuments": ["03-backend.md"],
+      "expectAbstain": false
+    },
+    {
+      "id": "env-validation",
+      "kind": "factual",
+      "query": "What happens at boot if an environment variable is missing?",
+      "expectedDocuments": ["03-backend.md"],
+      "expectAbstain": false
+    },
+    {
+      "id": "logging-redaction",
+      "kind": "section-specific",
+      "query": "What logging library is used and what is redacted?",
+      "expectedDocuments": ["03-backend.md"],
+      "expectAbstain": false
+    },
+    {
+      "id": "stack-traces",
+      "kind": "adversarial",
+      "query": "Are stack traces or provider error messages ever sent to the client?",
+      "expectedDocuments": ["03-backend.md", "04-data-and-api.md"],
+      "expectAbstain": false
+    },
+    {
+      "id": "route-guards",
+      "kind": "factual",
+      "query": "What are the three route guards in the frontend and why are they separate?",
+      "expectedDocuments": ["02-frontend.md"],
+      "expectAbstain": false
+    },
+    {
+      "id": "url-is-state",
+      "kind": "citation-sensitive",
+      "query": "Which pieces of state belong in the URL rather than in memory?",
+      "expectedDocuments": ["02-frontend.md"],
+      "expectAbstain": false
+    },
+    {
+      "id": "error-boundaries",
+      "kind": "multi-document",
+      "query": "At which levels are React error boundaries placed?",
+      "expectedDocuments": ["02-frontend.md", "00-product.md"],
+      "expectAbstain": false
+    },
+    {
+      "id": "settings-routes",
+      "kind": "multi-document",
+      "query": "What sub-pages does the settings section have?",
+      "expectedDocuments": ["00-product.md", "02-frontend.md"],
+      "expectAbstain": false
+    },
+    {
+      "id": "keyboard-shortcuts",
+      "kind": "section-specific",
+      "query": "What is the global keyboard shortcut map?",
+      "expectedDocuments": ["00-product.md"],
+      "expectAbstain": false
+    },
+    {
+      "id": "delete-account",
+      "kind": "factual",
+      "query": "What does deleting an account cascade to?",
+      "expectedDocuments": ["00-product.md"],
+      "expectAbstain": false
+    },
+    {
+      "id": "sidebar-layout",
+      "kind": "citation-sensitive",
+      "query": "Why are Documents and Settings pinned to the bottom of the sidebar?",
+      "expectedDocuments": ["00-product.md"],
+      "expectAbstain": false
+    },
+    {
+      "id": "document-delete-warning",
+      "kind": "multi-chunk",
+      "query": "What happens to existing conversations when a document is deleted?",
+      "expectedDocuments": ["00-product.md"],
+      "expectAbstain": false
+    },
+    {
+      "id": "design-tokens",
+      "kind": "section-specific",
+      "query": "What categories of design tokens are defined?",
+      "expectedDocuments": ["01-design-system.md"],
+      "expectAbstain": false
+    },
+    {
+      "id": "component-tiers",
+      "kind": "factual",
+      "query": "What are the three tiers of components?",
+      "expectedDocuments": ["01-design-system.md"],
+      "expectAbstain": false
+    },
+    {
+      "id": "document-set",
+      "kind": "factual",
+      "query": "What documents make up this design document set and in what order should they be read?",
+      "expectedDocuments": ["README.md"],
+      "expectAbstain": false
+    },
+    {
+      "id": "tenancy-defense",
+      "kind": "multi-document",
+      "query": "How is tenant isolation enforced and why are there two layers?",
+      "expectedDocuments": ["04-data-and-api.md"],
+      "expectAbstain": false
+    },
+    {
+      "id": "cors-policy",
+      "kind": "factual",
+      "query": "Is a CORS wildcard allowed?",
+      "expectedDocuments": ["04-data-and-api.md"],
+      "expectAbstain": false
+    },
+
+    {
+      "id": "off-pricing",
+      "kind": "unanswerable",
+      "query": "How much does a Lumora subscription cost per month?",
+      "expectedDocuments": [],
+      "expectAbstain": true
+    },
+    {
+      "id": "off-notice-period",
+      "kind": "unanswerable",
+      "query": "What is the notice period for terminating this agreement?",
+      "expectedDocuments": [],
+      "expectAbstain": true
+    },
+    {
+      "id": "off-part-number",
+      "kind": "unanswerable",
+      "query": "What is the replacement part number RL-88 used for?",
+      "expectedDocuments": [],
+      "expectAbstain": true
+    },
+    {
+      "id": "off-soc2",
+      "kind": "unanswerable",
+      "query": "When did Lumora achieve SOC 2 Type II certification?",
+      "expectedDocuments": [],
+      "expectAbstain": true
+    },
+    {
+      "id": "off-kubernetes",
+      "kind": "unanswerable",
+      "query": "How many Kubernetes nodes does the production cluster run?",
+      "expectedDocuments": [],
+      "expectAbstain": true
+    },
+    {
+      "id": "off-ceo",
+      "kind": "adversarial",
+      "query": "Who is the CEO of Lumora and when was the company founded?",
+      "expectedDocuments": [],
+      "expectAbstain": true
+    },
+
+    {
+      "id": "idx-rrf",
+      "kind": "off-corpus-current-index",
+      "query": "How does reciprocal rank fusion combine the vector and lexical result lists?",
+      "expectedDocuments": [],
+      "expectAbstain": true,
+      "answerableInFullCorpus": "05-rag-and-chat.md"
+    },
+    {
+      "id": "idx-chunk-size",
+      "kind": "off-corpus-current-index",
+      "query": "What is the target chunk size and overlap for document chunking?",
+      "expectedDocuments": [],
+      "expectAbstain": true,
+      "answerableInFullCorpus": "05-rag-and-chat.md"
+    },
+    {
+      "id": "idx-milestones",
+      "kind": "off-corpus-current-index",
+      "query": "What are the development milestones M0 through M8?",
+      "expectedDocuments": [],
+      "expectAbstain": true,
+      "answerableInFullCorpus": "06-roadmap.md"
+    }
+  ]
+}

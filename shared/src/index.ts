@@ -39,6 +39,9 @@ export {
   forgotPasswordRequestSchema,
   resetPasswordRequestSchema,
   verifyEmailRequestSchema,
+  updateProfileRequestSchema,
+  changePasswordRequestSchema,
+  deleteAccountRequestSchema,
   PASSWORD_RULES,
   type PasswordRule,
   type SignupRequest,
@@ -46,6 +49,9 @@ export {
   type ForgotPasswordRequest,
   type ResetPasswordRequest,
   type VerifyEmailRequest,
+  type UpdateProfileRequest,
+  type ChangePasswordRequest,
+  type DeleteAccountRequest,
 } from './schemas/auth.schemas.js';
 
 export {

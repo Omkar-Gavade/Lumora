@@ -98,6 +98,9 @@ export const retrievalService = {
         tokenCount: context.tokenCount,
         droppedForBudget: context.droppedForBudget,
         abstain: abstainReason !== null,
+        // Absent on a healthy search rather than logged as an empty array, so
+        // the field's presence is itself the signal worth alerting on.
+        ...(result.stats.degraded.length > 0 ? { degraded: result.stats.degraded } : {}),
       },
       'Retrieval complete',
     );
@@ -115,6 +118,7 @@ export const retrievalService = {
         lexicalCandidates: result.stats.lexicalCandidates,
         fusedCandidates: result.stats.fusedCandidates,
         returned: context.chunks.length,
+        degraded: result.stats.degraded,
       },
       timings: {
         totalMs,

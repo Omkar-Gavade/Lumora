@@ -26,7 +26,7 @@ export function splitStreamingMarkdown(text: string): { stable: string; pending:
   const fences = countFences(text);
 
   // Even number of fences: every block is closed, so all of it is safe.
-  if (fences.open === false) return { stable: text, pending: '' };
+  if (!fences.open) return { stable: text, pending: '' };
 
   return {
     stable: text.slice(0, fences.lastFenceIndex),

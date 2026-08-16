@@ -423,6 +423,103 @@ const envSchema = z.object({
  */
 const REQUIRED_FOR_SMTP = ['SMTP_HOST', 'SMTP_USER', 'SMTP_PASSWORD'] as const;
 
+/** Hosts that mean "this machine" and therefore never mean "production". */
+const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '0.0.0.0', 'host.docker.internal']);
+
+function isLocalUrl(value: string): boolean {
+  try {
+    return LOCAL_HOSTS.has(new URL(value).hostname);
+  } catch {
+    // Not a parseable URL. Some other rule owns that complaint; this one
+    // should not turn a malformed value into a confusing "is localhost".
+    return false;
+  }
+}
+
+/**
+ * Rules that only apply when `NODE_ENV=production`.
+ *
+ * Every one of these is a configuration that boots cleanly, serves traffic, and
+ * is wrong — which is the only class of misconfiguration worth failing startup
+ * over. A missing secret already crashes on first use; a *fake* LLM provider
+ * answers every question, forever, from a stub, and nothing in the logs says so.
+ *
+ * The dangerous default is `VECTOR_STORE`, which is `fake` when unset. A
+ * production deploy that forgets one variable gets an in-memory vector store
+ * that returns plausible-looking nothing and loses it on restart.
+ */
+function applyProductionRules(
+  value: z.infer<typeof envSchema>,
+  ctx: z.RefinementCtx,
+): void {
+  if (value.NODE_ENV !== 'production') return;
+
+  /*
+    docs/06-roadmap.md §5 explicitly forbids the reverse of this rule — "do not
+    silently fall back from a production vector store to an in-memory fake" —
+    and the fakes exist so the pipeline can be developed without an API key, not
+    so it can be *served* without one.
+  */
+  const fakes = [
+    ['LLM_PROVIDER', value.LLM_PROVIDER],
+    ['EMBEDDING_PROVIDER', value.EMBEDDING_PROVIDER],
+    ['VECTOR_STORE', value.VECTOR_STORE],
+  ] as const;
+
+  for (const [key, selected] of fakes) {
+    if (selected !== 'fake') continue;
+    ctx.addIssue({
+      code: 'custom',
+      path: [key],
+      message:
+        'must not be "fake" in production — a stub provider answers every request and nothing in the logs says so',
+    });
+  }
+
+  /*
+    A localhost URL in production is either a deploy that never got its real
+    configuration, or a container talking to itself. Both present as "the
+    feature is broken" a long way from the cause: `APP_URL` puts unreachable
+    links in verification emails, and `CORS_ORIGINS` refuses the real frontend.
+  */
+  const urls = [
+    ['APP_URL', value.APP_URL],
+    ['CHROMA_URL', value.CHROMA_URL],
+    ['DATABASE_URL', value.DATABASE_URL],
+  ] as const;
+
+  for (const [key, url] of urls) {
+    if (!isLocalUrl(url)) continue;
+    ctx.addIssue({
+      code: 'custom',
+      path: [key],
+      message: 'must not point at localhost in production',
+    });
+  }
+
+  for (const origin of value.CORS_ORIGINS) {
+    if (!isLocalUrl(origin)) continue;
+    ctx.addIssue({
+      code: 'custom',
+      path: ['CORS_ORIGINS'],
+      message: `must not contain a localhost origin in production (${origin})`,
+    });
+  }
+
+  /*
+    The console mail driver prints verification and reset links to stdout. In
+    production that is both a broken signup flow and a credential in the logs.
+  */
+  if (value.MAIL_DRIVER === 'console') {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['MAIL_DRIVER'],
+      message:
+        'must not be "console" in production — it prints verification and reset links to stdout',
+    });
+  }
+}
+
 const envSchemaWithRules = envSchema.superRefine((value, ctx) => {
   /*
     A heartbeat slower than the lease guarantees the reaper steals jobs from
@@ -514,6 +611,8 @@ const envSchemaWithRules = envSchema.superRefine((value, ctx) => {
       message: 'is required when LLM_PROVIDER=openai (or set LLM_API_KEY)',
     });
   }
+
+  applyProductionRules(value, ctx);
 
   if (value.MAIL_DRIVER !== 'smtp') return;
 

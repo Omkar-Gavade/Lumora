@@ -1,6 +1,12 @@
 import cookieParser from 'cookie-parser';
 import express, { type Express } from 'express';
-import { JSON_BODY_LIMIT, URLENCODED_BODY_LIMIT } from './config/index.js';
+import {
+  GLOBAL_RATE_LIMIT,
+  GLOBAL_RATE_LIMIT_WINDOW_MS,
+  JSON_BODY_LIMIT,
+  URLENCODED_BODY_LIMIT,
+} from './config/index.js';
+import { ipKeyExceptHealth, rateLimit } from './api/middleware/rate-limit.js';
 import { registerRoutes } from './api/routes/index.js';
 import { errorHandler } from './api/middleware/error-handler.js';
 import { notFoundHandler } from './api/middleware/not-found.js';
@@ -69,13 +75,25 @@ export function createApp(): Express {
   app.use(cookieParser());
 
   /*
-    6 — global rate limit: not mounted.
+    6 — global rate limit: docs/04-data-and-api.md §3.4's 300 / 15 min per IP.
 
-    docs/04-data-and-api.md §3.4 specifies a 300/15min per-IP ceiling, and it
-    belongs to the whole API surface rather than to authentication. The auth
-    endpoints carry their own, stricter, per-route limits; the global ceiling
-    lands when there are non-auth routes for it to protect.
+    This is a backstop, not the real defence. Every endpoint worth abusing
+    carries its own stricter limit at its router; what this catches is the
+    surface those limits do not name — enumeration across many cheap endpoints,
+    and any route added later that its author forgot to protect. A ceiling that
+    has to be remembered per route is a ceiling that eventually is not.
+
+    Mounted after the body parsers so a rejected request is still logged with
+    its parsed context, and before the routes so it applies to all of them.
   */
+  app.use(
+    rateLimit({
+      name: 'global',
+      limit: GLOBAL_RATE_LIMIT,
+      windowMs: GLOBAL_RATE_LIMIT_WINDOW_MS,
+      keyOf: ipKeyExceptHealth,
+    }),
+  );
 
   // 7 — routes.
   registerRoutes(app);

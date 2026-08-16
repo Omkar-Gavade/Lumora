@@ -128,3 +128,28 @@ export const PASSWORD_RULES: PasswordRule[] = [
   },
   { label: 'At least one number', test: (value) => /\d/.test(value) },
 ];
+
+/**
+ * Account self-service bodies (docs/04-data-and-api.md §2.2).
+ *
+ * `currentPasswordSchema` for the credential being *proved* and
+ * `newPasswordSchema` for the one being *set* — the asymmetry is deliberate and
+ * explained above: applying the full policy to a password the user already has
+ * would reject a legitimate account whose password predates the current rules.
+ */
+export const updateProfileRequestSchema = z.object({
+  displayName: displayNameSchema,
+});
+
+export const changePasswordRequestSchema = z.object({
+  currentPassword: currentPasswordSchema,
+  newPassword: newPasswordSchema,
+});
+
+export const deleteAccountRequestSchema = z.object({
+  password: currentPasswordSchema,
+});
+
+export type UpdateProfileRequest = z.infer<typeof updateProfileRequestSchema>;
+export type ChangePasswordRequest = z.infer<typeof changePasswordRequestSchema>;
+export type DeleteAccountRequest = z.infer<typeof deleteAccountRequestSchema>;

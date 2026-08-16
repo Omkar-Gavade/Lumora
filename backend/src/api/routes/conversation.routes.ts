@@ -10,7 +10,7 @@ import {
 import { Router } from 'express';
 import * as conversationController from '../controllers/conversation.controller.js';
 import { asyncHandler } from '../middleware/async-handler.js';
-import { authenticate, requireVerified } from '../middleware/authenticate.js';
+import { authenticate } from '../middleware/authenticate.js';
 import { rateLimit } from '../middleware/rate-limit.js';
 import { validate } from '../middleware/validate.js';
 
@@ -19,13 +19,13 @@ const HOUR = 60 * 60 * 1000;
 /**
  * Conversation and message routes (docs/04-data-and-api.md §2.4).
  *
- * `authenticate` then `requireVerified`, matching documents and search: a
- * conversation reads a user's own corpus, and FR-5 gates that behind
- * verification.
+ * `authenticate`, matching documents and search. The email-verification gate
+ * was removed with the one on documents — see that file for why. Ownership is
+ * enforced where it belongs, in repository queries scoped by `user_id`.
  */
 export const conversationRouter: Router = Router();
 
-conversationRouter.use(authenticate, requireVerified);
+conversationRouter.use(authenticate);
 
 conversationRouter.post(
   '/',
@@ -127,7 +127,7 @@ conversationRouter.post(
  */
 export const messageRouter: Router = Router();
 
-messageRouter.use(authenticate, requireVerified);
+messageRouter.use(authenticate);
 
 messageRouter.delete(
   '/:id',

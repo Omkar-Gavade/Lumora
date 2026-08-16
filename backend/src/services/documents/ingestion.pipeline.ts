@@ -29,6 +29,16 @@ import { parserFor } from './parsing/parser.registry.js';
  * past this stage, or it no longer exists. Both mean "complete the job", but
  * only one of them is normal.
  */
+/**
+ * Chunk rows per INSERT while chunking.
+ *
+ * Sized for progress granularity, not throughput. Small enough that a long
+ * document reports movement several times, large enough that a 500-chunk file
+ * is 5 statements rather than 500 — the round trips happen while the worker
+ * holds a lease, and `WORKER_LEASE_MS` is what bounds how many are safe.
+ */
+const CHUNK_WRITE_BATCH = 100;
+
 export type IngestionOutcome =
   | { kind: 'advanced'; status: DocumentStatus }
   | { kind: 'skipped'; reason: 'already-processed' | 'deleted' }
@@ -228,9 +238,20 @@ export async function runIngestion(payload: IngestDocumentPayload): Promise<Inge
   }
 
   // ── Stage: embedding ───────────────────────────────────────────────────────
+  /*
+    `chunkCount` is written here, not only at `ready`.
+
+    It is the denominator the user is shown against embedding progress, and a
+    denominator that only appears once the numerator is already complete is
+    not progress. Setting it on entry to `embedding` also makes it exact: the
+    running total written during chunking is a floor, and this is the count
+    the stage actually finished with — which is what corrects it downwards
+    when a retuned chunker produces fewer chunks than the previous run.
+  */
   const embedding = await documentRepository.transitionStatus(documentId, userId, {
     from: STAGE_ENTRY_STATES.embed,
     to: 'embedding',
+    chunkCount,
   });
 
   if (embedding === null) {
@@ -298,19 +319,44 @@ async function persistChunks(
 
   if (chunks.length === 0) return 0;
 
-  await chunkRepository.upsertMany(
-    chunks.map((chunk) => ({
-      documentId: document.id,
-      userId: document.userId,
-      chunkIndex: chunk.index,
-      content: chunk.content,
-      tokenCount: chunk.tokenCount,
-      pageNumber: chunk.pageNumber,
-      sectionPath: chunk.sectionPath,
-      charStart: chunk.charStart,
-      charEnd: chunk.charEnd,
-    })),
-  );
+  /*
+    The denominator first, then the rows in batches.
+
+    Recording the total before writing anything is what makes the progress a
+    fraction: a reader that arrives mid-chunking sees `chunkCount` 100 with 42
+    rows committed, rather than a bare 42 with nothing to measure it against.
+
+    The batching is what makes the numerator move at all. One statement for the
+    whole document was fine for correctness and useless for progress — every
+    row appeared in a single commit, so a 300-page PDF showed "Splitting" with
+    no indication of how far along it was. Each batch costs one round trip and
+    buys a number that climbs.
+
+    Idempotency is unchanged. Each batch is the same conflict-target upsert as
+    before, so a retry rewrites the same rows at the same indices; a crash
+    between batches leaves a prefix committed, and the next attempt re-derives
+    identical chunks and converges over them. Nothing here double-counts,
+    because nothing here counts — the progress is read from the rows.
+  */
+  await documentRepository.recordPlannedChunkCount(document.id, document.userId, chunks.length);
+
+  for (let offset = 0; offset < chunks.length; offset += CHUNK_WRITE_BATCH) {
+    const batch = chunks.slice(offset, offset + CHUNK_WRITE_BATCH);
+
+    await chunkRepository.upsertMany(
+      batch.map((chunk) => ({
+        documentId: document.id,
+        userId: document.userId,
+        chunkIndex: chunk.index,
+        content: chunk.content,
+        tokenCount: chunk.tokenCount,
+        pageNumber: chunk.pageNumber,
+        sectionPath: chunk.sectionPath,
+        charStart: chunk.charStart,
+        charEnd: chunk.charEnd,
+      })),
+    );
+  }
 
   const removed = await chunkRepository.deleteFromIndex(document.id, chunks.length);
   if (removed > 0) {

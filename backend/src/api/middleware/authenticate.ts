@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
-import { EmailNotVerifiedError, UnauthorizedError } from '../../domain/errors/index.js';
+import { UnauthorizedError } from '../../domain/errors/index.js';
+import { userRepository } from '../../repositories/user.repository.js';
 import { tokenService } from '../../services/auth/token.service.js';
 
 /**
@@ -39,7 +40,33 @@ export function authenticate(req: Request, _res: Response, next: NextFunction): 
 
   tokenService
     .verifyAccessToken(token)
-    .then((actor) => {
+    .then(async (actor) => {
+      /*
+        `token_version` is compared against the database here, not inside
+        `verifyAccessToken`.
+
+        The split is deliberate: token verification is a cryptographic question
+        and stays pure and unit-testable, while "is this session still valid"
+        is a stateful one and belongs where state access already lives.
+
+        Without this comparison the column does nothing at all. Two documented
+        behaviours depended on it and were silently ineffective:
+        docs/04-data-and-api.md §2.1 (`logout-all` "bumps `token_version`") and
+        §3.3 (a reset must "bump `token_version` so existing access tokens die
+        too"). The claim was issued, carried, and copied onto the actor — never
+        checked — so a stolen access token survived every "sign out everywhere"
+        and every password reset for the rest of its 15-minute life.
+
+        The cost is one indexed primary-key lookup per authenticated request.
+        That is the price of revocation actually revoking; a 15-minute TTL
+        bounds the window but does not close it, and the product tells users
+        their sessions were ended.
+      */
+      const current = await userRepository.findById(actor.userId);
+      if (current?.tokenVersion !== actor.tokenVersion) {
+        throw new UnauthorizedError();
+      }
+
       req.actor = actor;
       // Every log line for this request now carries the user, without a single
       // handler having to remember to add it.
@@ -49,30 +76,19 @@ export function authenticate(req: Request, _res: Response, next: NextFunction): 
     .catch(next);
 }
 
-/**
- * Gates an endpoint on a verified email address (FR-5).
- *
- * Separate from `authenticate` rather than a flag on it, because they answer
- * different questions and compose independently — settings needs the first and
- * not the second, uploads need both (docs/02-frontend.md §4).
- *
- * Reads the claim, not the database. The claim is refreshed whenever tokens
- * are reissued, and verification reissues them immediately, so the gate lifts
- * the moment the link is clicked rather than at the next token expiry.
- */
-export function requireVerified(req: Request, _res: Response, next: NextFunction): void {
-  if (!req.actor) {
-    // A programming error: this middleware was mounted without `authenticate`
-    // ahead of it. Surfacing it as 401 rather than crashing keeps a
-    // misconfigured route closed rather than open.
-    next(new UnauthorizedError());
-    return;
-  }
+/*
+  `requireVerified` used to live here and is gone.
 
-  if (!req.actor.emailVerified) {
-    next(new EmailNotVerifiedError());
-    return;
-  }
+  It gated documents, search, and conversations on a confirmed email address.
+  Removed because it answered a question no endpoint was asking: verification
+  proves an address receives mail, and every route it guarded is already scoped
+  to `req.actor.userId` in the repository layer, which is what actually keeps
+  one account out of another's data. The gate's only observable effect was a
+  registration flow that ended in a shell the new account could not use.
 
-  next();
-}
+  Nothing about authentication changed with it. The access token is still
+  signature-checked, expiry-checked, `typ`-checked, and — the part that matters
+  most — `token_version`-checked against the stored value, so a password change
+  still revokes every outstanding session. Verification remains available as a
+  user action; it is simply no longer a prerequisite for using the product.
+*/

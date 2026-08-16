@@ -2,7 +2,7 @@ import { searchQueryParamsSchema, searchRequestSchema } from '@lumora/shared';
 import { Router } from 'express';
 import * as searchController from '../controllers/search.controller.js';
 import { asyncHandler } from '../middleware/async-handler.js';
-import { authenticate, requireVerified } from '../middleware/authenticate.js';
+import { authenticate } from '../middleware/authenticate.js';
 import { rateLimit } from '../middleware/rate-limit.js';
 import { validate } from '../middleware/validate.js';
 
@@ -18,15 +18,15 @@ const MINUTE = 60 * 1000;
  * gated on `SEARCH_API_ENABLED`, which defaults off in production — see
  * `config/env.ts` for the reasoning.
  *
- * `authenticate` then `requireVerified`, matching documents: retrieval reads a
- * user's own corpus, and every result is a passage from a file they uploaded.
+ * `authenticate`, matching documents. Retrieval reads a user's own corpus, and
+ * every result is a passage from a file they uploaded.
  * Tenancy is not enforced here but structurally — a per-user vector collection
  * and `user_id` on every lexical query — so a bug in this file cannot leak
  * another account's documents.
  */
 export const searchRouter: Router = Router();
 
-searchRouter.use(authenticate, requireVerified);
+searchRouter.use(authenticate);
 
 /**
  * 60/minute per user.

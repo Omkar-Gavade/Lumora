@@ -220,25 +220,74 @@ export async function* readServerSentEvents(
   const reader = body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
+  /*
+    A trailing `\r` held back until its partner arrives.
+
+    Without it, a chunk boundary that lands between the `\r` and the `\n` of one
+    CRLF would normalize the orphaned `\r` to `\n` and the following `\n` to a
+    second one — inventing a frame separator in the middle of an event and
+    truncating it. Rare, non-deterministic, and it would look like the model
+    occasionally cutting off mid-sentence.
+  */
+  let pendingCarriageReturn = '';
+
+  /**
+   * Emits every `data:` payload in a completed frame.
+   *
+   * The line-ending normalization above is what makes `startsWith('data:')`
+   * and the trailing `.trim()` sufficient — by this point a line cannot end in
+   * a stray `\r` that would ride along into the JSON parse.
+   */
+  function* framesIn(text: string): Generator<string> {
+    for (const line of text.split('\n')) {
+      if (line.startsWith('data:')) yield line.slice(5).trim();
+    }
+  }
 
   try {
     while (!signal.aborted) {
       const { done, value } = await reader.read();
       if (done) break;
 
-      buffer += decoder.decode(value, { stream: true });
+      /*
+        CRLF is normalized to LF before anything looks for a separator.
+
+        This is not defensive tidying — it is the difference between a working
+        stream and a silent empty one. The SSE grammar admits CR, LF, or CRLF
+        as a line terminator, and Gemini's `alt=sse` endpoint uses CRLF, so a
+        reader that only knows `\n\n` finds **no** frame boundaries in a
+        perfectly valid response: every token stays in the buffer, the stream
+        ends, and the caller sees a clean finish with an empty answer and zero
+        reported usage. OpenAI happens to send bare LF, which is why this went
+        unnoticed until a second provider was exercised end to end.
+      */
+      const decoded = pendingCarriageReturn + decoder.decode(value, { stream: true });
+      pendingCarriageReturn = decoded.endsWith('\r') ? '\r' : '';
+      const usable = pendingCarriageReturn === '' ? decoded : decoded.slice(0, -1);
+
+      buffer += usable.replace(/\r\n?/g, '\n');
 
       let separator = buffer.indexOf('\n\n');
       while (separator !== -1) {
         const frame = buffer.slice(0, separator);
         buffer = buffer.slice(separator + 2);
 
-        for (const line of frame.split('\n')) {
-          if (line.startsWith('data:')) yield line.slice(5).trim();
-        }
+        yield* framesIn(frame);
 
         separator = buffer.indexOf('\n\n');
       }
+    }
+
+    /*
+      Whatever is left when the stream ends.
+
+      A server is not obliged to terminate its final event with a blank line
+      before closing the connection, and discarding the tail loses the last
+      chunk of the answer — which is where `finishReason` and usage live.
+    */
+    if (!signal.aborted) {
+      const tail = (buffer + pendingCarriageReturn).replace(/\r\n?/g, '\n');
+      if (tail.length > 0) yield* framesIn(tail);
     }
   } finally {
     // Releases the underlying connection. Without it an aborted stream leaks a

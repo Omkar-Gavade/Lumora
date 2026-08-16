@@ -23,16 +23,14 @@ export function PublicOnlyRoute() {
 
   if (status === 'authenticated') {
     /*
-      An unverified account goes to the verification screen, not into the app.
+      Signing up lands in the application, not on a verification screen.
 
-      This is what makes the signup flow land where docs/00-product.md §8
-      specifies ("routed to /verify-email with 'check your inbox'"). Signup
-      adopts a session and *then* navigates, so this guard re-renders first and
-      its redirect wins the race — putting the destination here rather than
-      relying on the order of a setState and a navigate is what makes the
-      outcome deterministic instead of accidental.
+      This guard used to divert an unverified account to /verify-email, which
+      made registering a two-step flow whose second step depended on a mail
+      round trip the user could not influence. The backend gate that made the
+      diversion necessary is gone (see `api/middleware/authenticate.ts`), so
+      the account that just registered goes where it was trying to go.
     */
-    if (user && !user.emailVerified) return <Navigate to={ROUTES.verifyEmail} replace />;
 
     // Honour the same `?next=` the protected guard sets, so an expired session
     // that re-authenticates lands back where it started — sanitized, because

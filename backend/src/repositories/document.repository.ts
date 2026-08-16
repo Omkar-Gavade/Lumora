@@ -5,7 +5,55 @@ import { db } from '../db/pool.js';
 import type { Document } from '../domain/entities/document.js';
 import type { Executor } from './user.repository.js';
 
-function toDocument(row: Selectable<DocumentsTable>): Document {
+/**
+ * Processing progress, counted at read time rather than stored.
+ *
+ * Three numbers describe a document mid-pipeline, and only one of them is a
+ * column. `documents.chunk_count` is the **planned total** — the chunker is
+ * deterministic and knows it before the first row is written, so it is a fact
+ * to record, not a tally to accumulate. The other two are counted from the
+ * chunk rows themselves:
+ *
+ * - `written_chunk_count` — rows committed, which climbs during `chunking`.
+ * - `embedded_chunk_count` — rows whose `vector_id` is set, which climbs
+ *   during `embedding`. `markEmbedded` writes that field only after the vector
+ *   store confirms the upsert, so this counts vectors that provably landed.
+ *
+ * Counted rather than mirrored into columns on purpose. A counter column would
+ * be a second source of truth for a fact the rows already carry, and a worker
+ * killed between writing vectors and updating the tally would leave it
+ * permanently wrong with nothing to detect the drift. Counting also means
+ * progress survives a worker restart for free: the restart reads the same rows.
+ *
+ * Both are covered by the existing `document_chunks (document_id, chunk_index)`
+ * index for the document lookup, and the counts are per-document and small.
+ */
+const WRITTEN_CHUNK_COUNT = sql<number>`(
+  SELECT count(*)
+  FROM document_chunks
+  WHERE document_chunks.document_id = documents.id
+)`;
+
+const EMBEDDED_CHUNK_COUNT = sql<number>`(
+  SELECT count(*)
+  FROM document_chunks
+  WHERE document_chunks.document_id = documents.id
+    AND document_chunks.vector_id IS NOT NULL
+)`;
+
+/** A document row plus the derived progress columns selected alongside it. */
+type DocumentRow = Selectable<DocumentsTable> & {
+  written_chunk_count: number;
+  embedded_chunk_count: number;
+};
+
+/** The two derived columns, added to any `documents` select. */
+const PROGRESS_COLUMNS = [
+  WRITTEN_CHUNK_COUNT.as('written_chunk_count'),
+  EMBEDDED_CHUNK_COUNT.as('embedded_chunk_count'),
+] as const;
+
+function toDocument(row: DocumentRow): Document {
   return {
     id: row.id,
     userId: row.user_id,
@@ -20,6 +68,10 @@ function toDocument(row: Selectable<DocumentsTable>): Document {
     errorMessage: row.error_message,
     pageCount: row.page_count,
     chunkCount: row.chunk_count,
+    // `count(*)` is a bigint; the INT8 parser installed in `db/pool.ts` hands
+    // it over as a number, and `Number` covers the case where it does not.
+    writtenChunkCount: Number(row.written_chunk_count),
+    embeddedChunkCount: Number(row.embedded_chunk_count),
     tokenCount: row.token_count,
     embeddingModel: row.embedding_model,
     embeddingDims: row.embedding_dims,
@@ -77,13 +129,20 @@ export const documentRepository = {
       .returningAll()
       .executeTakeFirstOrThrow();
 
-    return toDocument(row);
+    /*
+      Zero, asserted rather than counted. Chunks reference this row by foreign
+      key and are written by the ingestion worker minutes later, so a document
+      cannot have any at the moment it is inserted. Running the subquery here
+      would spend a scan to learn something the schema already guarantees.
+    */
+    return toDocument({ ...row, written_chunk_count: 0, embedded_chunk_count: 0 });
   },
 
   async findById(id: string, userId: string, executor: Executor = db): Promise<Document | null> {
     const row = await executor
       .selectFrom('documents')
       .selectAll()
+      .select(PROGRESS_COLUMNS)
       .where('id', '=', id)
       .where('user_id', '=', userId)
       .executeTakeFirst();
@@ -100,6 +159,7 @@ export const documentRepository = {
     const row = await executor
       .selectFrom('documents')
       .selectAll()
+      .select(PROGRESS_COLUMNS)
       .where('user_id', '=', userId)
       .where('content_hash', '=', contentHash)
       .executeTakeFirst();
@@ -130,6 +190,7 @@ export const documentRepository = {
     let query = executor
       .selectFrom('documents')
       .selectAll()
+      .select(PROGRESS_COLUMNS)
       .where('user_id', '=', userId)
       .orderBy('created_at', 'desc')
       .orderBy('id', 'desc')
@@ -176,7 +237,13 @@ export const documentRepository = {
       .returningAll()
       .executeTakeFirst();
 
-    return row ? toDocument(row) : null;
+    /*
+      Zero, because the row is gone and `ON DELETE CASCADE` takes its chunks
+      with it. Counting inside `RETURNING` would read whatever the cascade has
+      not reached yet — a number describing a document that no longer exists.
+      The caller wants the storage key, not the progress.
+    */
+    return row ? toDocument({ ...row, written_chunk_count: 0, embedded_chunk_count: 0 }) : null;
   },
 
   /**
@@ -243,6 +310,7 @@ export const documentRepository = {
       .where('user_id', '=', userId)
       .where('status', 'in', input.from)
       .returningAll()
+      .returning(PROGRESS_COLUMNS)
       .executeTakeFirst();
 
     return row ? toDocument(row) : null;
@@ -279,9 +347,43 @@ export const documentRepository = {
       .where('user_id', '=', userId)
       .where('status', 'not in', ['ready', 'failed'] satisfies DocumentStatus[])
       .returningAll()
+      .returning(PROGRESS_COLUMNS)
       .executeTakeFirst();
 
     return row ? toDocument(row) : null;
+  },
+
+  /**
+   * Records the total the chunker is about to write, before it writes it.
+   *
+   * Without this, `chunk_count` was first set at the `ready` transition, so the
+   * field a user watches read 0 for the whole run and then jumped straight to
+   * its final value — a total that arrives after the question stops mattering,
+   * not a denominator. Writing it up front is what turns the derived row count
+   * into "42 / 100" instead of a bare "42".
+   *
+   * Set exactly rather than accumulated: the chunker is deterministic and has
+   * already produced every chunk in memory by the time this is called, so the
+   * number is a fact about this run, not a running guess. That is also what
+   * corrects it downwards when a retuned chunker produces fewer chunks than a
+   * previous attempt left behind.
+   *
+   * Deliberately unguarded on status — it describes work this worker is
+   * committed to doing, and a concurrent transition is not a reason to lose it.
+   * Guarded on owner, like everything here.
+   */
+  async recordPlannedChunkCount(
+    id: string,
+    userId: string,
+    plannedChunks: number,
+    executor: Executor = db,
+  ): Promise<void> {
+    await executor
+      .updateTable('documents')
+      .set({ chunk_count: plannedChunks, updated_at: sql<string>`now()` })
+      .where('id', '=', id)
+      .where('user_id', '=', userId)
+      .execute();
   },
 
   /**
@@ -320,6 +422,7 @@ export const documentRepository = {
       .where('user_id', '=', userId)
       .where('status', '=', 'failed')
       .returningAll()
+      .returning(PROGRESS_COLUMNS)
       .executeTakeFirst();
 
     return row ? toDocument(row) : null;

@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import type { CitationDto, MessageDto, StreamPhase, TurnSourceDto } from '@lumora/shared';
+import type { CitationDto, StreamPhase, TurnSourceDto } from '@lumora/shared';
 import { queryKeys } from '@/app/config/query-keys';
 import { env } from '@/app/config/env';
 import { getAccessToken } from '@/lib/api/client';
@@ -57,7 +57,7 @@ export function useStreamingTurn() {
    * Read when deciding whether to render the in-flight turn: switching threads
    * mid-stream must not paint the previous thread's tokens into the new one.
    */
-  const streamingForRef = useRef<string | null>(null);
+  const [streamingFor, setStreamingFor] = useState<string | null>(null);
 
   const isStreaming = turn !== null && turn.finishReason === null && turn.error === null;
 
@@ -73,7 +73,7 @@ export function useStreamingTurn() {
 
       const controller = new AbortController();
       controllerRef.current = controller;
-      streamingForRef.current = options.conversationId;
+      setStreamingFor(options.conversationId);
 
       setTurn({ ...EMPTY, question: options.content });
 
@@ -151,7 +151,7 @@ export function useStreamingTurn() {
               break;
           }
         }
-      } catch (error) {
+      } catch {
         /*
           An aborted fetch throws, and that is the stop button working rather
           than a failure. Anything else is a real transport error and gets an
@@ -207,7 +207,7 @@ export function useStreamingTurn() {
   const reset = useCallback(() => {
     controllerRef.current?.abort();
     controllerRef.current = null;
-    streamingForRef.current = null;
+    setStreamingFor(null);
     setTurn(null);
   }, []);
 
@@ -215,7 +215,7 @@ export function useStreamingTurn() {
     turn,
     isStreaming,
     /** The thread the live turn belongs to, so a switch can hide it. */
-    streamingFor: streamingForRef.current,
+    streamingFor,
     start,
     stop,
     reset,

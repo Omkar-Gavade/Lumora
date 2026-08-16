@@ -258,14 +258,23 @@ describe('POST /documents', () => {
       expectApiError(response, 401, ERROR_CODES.UNAUTHORIZED);
     });
 
-    it('requires a verified email address (FR-5)', async () => {
-      // The first real consumer of `requireVerified`: an unverified account
-      // keeps the shell and Settings but cannot upload.
+    it('lets an account that has not confirmed its email upload', async () => {
+      /*
+        This asserted a 403 until the verification gate was removed.
+
+        The gate protected nothing that authentication and per-user scoping do
+        not already protect — verification proves an address receives mail, not
+        that a request is authorized — and it cost every new account a dead end
+        between registering and being able to use the product. What remains is
+        the check that matters: the upload is attributed to the caller, and
+        only the caller can see it.
+      */
       const user = await createTestUser();
 
       const response = await upload(user.session.accessToken, 'notes.txt', FIXTURES.text());
-      expectApiError(response, 403, ERROR_CODES.EMAIL_NOT_VERIFIED);
-      expect(await countRows('documents')).toBe(0);
+
+      expect(response.status).toBe(202);
+      expect(await countRows('documents')).toBe(1);
     });
   });
 });

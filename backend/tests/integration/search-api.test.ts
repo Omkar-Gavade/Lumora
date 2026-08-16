@@ -197,14 +197,20 @@ describe('GET /search', () => {
     await request().get(`${API_PREFIX}/search?q=notice`).expect(401);
   });
 
-  it('requires a verified account', async () => {
-    // FR-5: an unverified account keeps the shell but cannot use the corpus.
+  it('serves an account that has not confirmed its email', async () => {
+    /*
+      This asserted a 403 until the verification gate was removed. Retrieval is
+      scoped by `user_id` on the lexical half and by a per-user collection on
+      the vector half, so an unconfirmed address changes nothing about what
+      this endpoint can reach — see `never returns another user’s chunks`,
+      which is the assertion that actually protects the corpus.
+    */
     const user = await createTestUser();
 
     await request()
       .get(`${API_PREFIX}/search?q=notice`)
       .set('Authorization', `Bearer ${user.session.accessToken}`)
-      .expect(403);
+      .expect(200);
   });
 
   it('never returns another user’s chunks', async () => {

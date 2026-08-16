@@ -27,7 +27,34 @@ export interface DocumentDto {
   /** FR-13: the human-readable reason. */
   errorMessage: string | null;
   pageCount: number | null;
+  /**
+   * The denominator of processing progress: how many chunks this document
+   * will have in total.
+   *
+   * Recorded once the chunker has split the text and before the first row is
+   * written, so `embedding` never reports a numerator without a denominator.
+   * `0` while the document is still `queued` or `parsing`, which is the truth
+   * — the total is not knowable until the text has been split.
+   */
   chunkCount: number;
+  /**
+   * Chunks committed to the database — the numerator during `chunking`.
+   *
+   * Counted from the chunk rows, so it reflects work that provably landed
+   * rather than work that was attempted.
+   */
+  writtenChunkCount: number;
+  /**
+   * Chunks whose vector has landed in the store — the numerator during
+   * `embedding`.
+   *
+   * Counted from `document_chunks.vector_id IS NOT NULL`, which the pipeline
+   * sets per batch **after** the vector store confirms the write. It is
+   * therefore the same fact the resume path reads, not a second counter kept
+   * alongside it: there is nothing for it to drift from, and it survives a
+   * worker restart because the restart reads the identical rows.
+   */
+  embeddedChunkCount: number;
   createdAt: string;
   processedAt: string | null;
 }

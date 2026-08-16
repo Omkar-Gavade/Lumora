@@ -115,6 +115,15 @@ export interface EvidenceBundleDto {
     lexicalCandidates: number;
     fusedCandidates: number;
     returned: number;
+    /**
+     * Names of retrievers that **failed**, as opposed to returning nothing.
+     *
+     * Without this, `vectorCandidates: 0` means either "no semantic match" or
+     * "the vector store rejected the query", and those need opposite responses.
+     * Non-empty means the results below are worse than this system can produce
+     * and the cause is operational, not the corpus.
+     */
+    degraded: string[];
   };
 
   timings: RetrievalTimingsDto;

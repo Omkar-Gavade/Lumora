@@ -21,6 +21,17 @@ export const APP_VERSION = PACKAGE_MANIFEST.version;
 export const JSON_BODY_LIMIT = '1mb';
 export const URLENCODED_BODY_LIMIT = '1mb';
 
+/**
+ * The global ceiling from docs/04-data-and-api.md §3.4: 300 / 15 min per IP.
+ *
+ * Not configurable, deliberately. Every per-route limit in §3.4 is a fixed
+ * number in its router, and a single tunable ceiling would be the one an
+ * operator raises to make an incident stop paging instead of finding out what
+ * is generating the traffic.
+ */
+export const GLOBAL_RATE_LIMIT = 300;
+export const GLOBAL_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+
 /** Inbound correlation id, honored so a trace survives a reverse proxy. */
 export const REQUEST_ID_HEADER = 'x-request-id';
 

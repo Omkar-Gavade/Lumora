@@ -25,6 +25,33 @@ const STATUS_LABEL: Record<DocumentStatus, string> = {
 
 const IN_PROGRESS: DocumentStatus[] = ['queued', 'parsing', 'chunking', 'embedding'];
 
+/**
+ * Real counts from the row, or nothing.
+ *
+ * The two working stages that have a measurable numerator each read a
+ * different one: `chunking` is bounded by rows committed, `embedding` by rows
+ * whose vector landed. Both are server state — there is no timer and no
+ * estimate here, so a stalled worker shows a number that stops moving rather
+ * than a bar that keeps filling.
+ *
+ * Returns `null` rather than "0/0" before the chunker has reported a total.
+ * A fraction with no denominator is not information, and `queued`/`parsing`
+ * genuinely have nothing to count yet.
+ */
+function progressFor(document: DocumentDto): string | null {
+  if (document.chunkCount === 0) return null;
+
+  if (document.status === 'chunking') {
+    return `${String(document.writtenChunkCount)}/${String(document.chunkCount)}`;
+  }
+
+  if (document.status === 'embedding') {
+    return `${String(document.embeddedChunkCount)}/${String(document.chunkCount)}`;
+  }
+
+  return null;
+}
+
 function StatusPill({ document }: { document: DocumentDto }) {
   if (document.status === 'ready') {
     return (
@@ -42,12 +69,15 @@ function StatusPill({ document }: { document: DocumentDto }) {
     );
   }
 
+  const progress = progressFor(document);
+
   return (
     <span className="inline-flex items-center gap-1.5 text-caption text-secondary">
       {/* The one place a spinner earns its keep: work really is ongoing, and
           the label says which stage. */}
       <Loader2 className="size-3 animate-spin" strokeWidth={2} aria-hidden="true" />
       {STATUS_LABEL[document.status]}
+      {progress !== null && <span className="tabular text-tertiary">{progress}</span>}
     </span>
   );
 }
@@ -76,6 +106,12 @@ export function DocumentRow({ document, onDelete, deleting }: DocumentRowProps) 
         <p className="mt-0.5 truncate text-caption text-tertiary">
           <span className="tabular">{formatBytes(document.sizeBytes)}</span>
           {document.pageCount !== null && <> · {document.pageCount} pages</>}
+          {/* Only once the document is answerable. A chunk count beside a
+              document still being indexed would be a second, competing
+              progress reading next to the one in the status pill. */}
+          {document.status === 'ready' && document.chunkCount > 0 && (
+            <> · <span className="tabular">{document.chunkCount}</span> chunks</>
+          )}
           {/* FR-13: the reason, not just the state. */}
           {document.status === 'failed' && document.errorMessage && (
             <> · <span className="text-danger">{document.errorMessage}</span></>

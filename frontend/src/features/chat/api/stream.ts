@@ -95,7 +95,10 @@ function parseFrame(frame: string): ChatStreamEvent | null {
   if (event === undefined || data === undefined) return null;
 
   try {
-    return { event, data: JSON.parse(data) } as ChatStreamEvent;
+    // `as unknown` first: `JSON.parse` returns `any`, and letting that flow
+    // straight into a typed union would silence every check the union exists
+    // to provide.
+    return { event, data: JSON.parse(data) as unknown } as ChatStreamEvent;
   } catch {
     return null;
   }

@@ -33,6 +33,21 @@ export interface HybridResult {
     vectorCandidates: number;
     lexicalCandidates: number;
     fusedCandidates: number;
+    /**
+     * Retrievers that failed rather than returned nothing.
+     *
+     * `vectorCandidates: 0` is ambiguous on its own and the ambiguity is
+     * expensive: "the corpus has no semantic match for this question" and "the
+     * vector store rejected the query" produce the identical number, and only
+     * one of them is a bug. This milestone lost time to exactly that — an
+     * embedding-dimension mismatch presented as a corpus that had nothing to
+     * say, because the failure was an `error` log nobody was reading and a zero
+     * that looked ordinary.
+     *
+     * Empty on a healthy search, so a caller can treat non-empty as "these
+     * results are worse than this system can do".
+     */
+    degraded: string[];
   };
   timings: { vectorMs: number; lexicalMs: number; fusionMs: number };
 }
@@ -94,8 +109,9 @@ export class HybridRetriever {
     ]);
     const searchMs = Date.now() - vectorStarted;
 
-    const vectorChunks = unwrap(vectorOutcome, 'vector', log);
-    const lexicalChunks = unwrap(lexicalOutcome, 'bm25', log);
+    const degraded: string[] = [];
+    const vectorChunks = unwrap(vectorOutcome, 'vector', log, degraded);
+    const lexicalChunks = unwrap(lexicalOutcome, 'bm25', log, degraded);
 
     const fusionStarted = Date.now();
 
@@ -127,6 +143,7 @@ export class HybridRetriever {
         vectorCandidates: vectorChunks.length,
         lexicalCandidates: lexicalChunks.length,
         fusedCandidates: fused.length,
+        degraded,
       },
       /*
         The two searches ran concurrently, so neither has a wall-clock duration
@@ -151,9 +168,11 @@ function unwrap(
   outcome: PromiseSettledResult<RetrievedChunk[]>,
   source: string,
   log: Logger,
+  degraded: string[],
 ): RetrievedChunk[] {
   if (outcome.status === 'fulfilled') return outcome.value;
 
+  degraded.push(source);
   log.error({ err: outcome.reason, retriever: source }, 'Retriever failed — degrading to the other half');
   return [];
 }

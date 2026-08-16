@@ -1,0 +1,3571 @@
+{
+  "version": 1,
+  "generatedAt": "2026-08-09T12:26:05.362Z",
+  "k": 5,
+  "corpus": {
+    "documents": 6,
+    "chunks": 98,
+    "names": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "provider": {
+    "embedding": "gemini",
+    "model": "gemini-embedding-001",
+    "dimensions": 768,
+    "vectorStore": "chroma"
+  },
+  "cases": 39,
+  "latencyMs": {
+    "p50": 501,
+    "p95": 601,
+    "max": 628
+  },
+  "scoreRange": {
+    "min": 0.53992486,
+    "max": 0.79128063,
+    "note": "Cosine similarity from the vector half — the field RETRIEVAL_MIN_SCORE is compared against."
+  },
+  "notMeasured": {
+    "citationPrecision": "requires generation — not implemented",
+    "citationCoverage": "requires generation — not implemented",
+    "groundedness": "requires generation — not implemented"
+  },
+  "sweep": [
+    {
+      "threshold": -1,
+      "recallAtK": 1,
+      "abstentionAccuracy": 0,
+      "falseAbstentions": 0,
+      "answerable": 30,
+      "abstainTotal": 9,
+      "failures": [
+        "off-pricing: answered when it should have abstained",
+        "off-notice-period: answered when it should have abstained",
+        "off-part-number: answered when it should have abstained",
+        "off-soc2: answered when it should have abstained",
+        "off-kubernetes: answered when it should have abstained",
+        "off-ceo: answered when it should have abstained",
+        "idx-rrf: answered when it should have abstained",
+        "idx-chunk-size: answered when it should have abstained",
+        "idx-milestones: answered when it should have abstained"
+      ]
+    },
+    {
+      "threshold": 0.56450886,
+      "recallAtK": 1,
+      "abstentionAccuracy": 0,
+      "falseAbstentions": 0,
+      "answerable": 30,
+      "abstainTotal": 9,
+      "failures": [
+        "off-pricing: answered when it should have abstained",
+        "off-notice-period: answered when it should have abstained",
+        "off-part-number: answered when it should have abstained",
+        "off-soc2: answered when it should have abstained",
+        "off-kubernetes: answered when it should have abstained",
+        "off-ceo: answered when it should have abstained",
+        "idx-rrf: answered when it should have abstained",
+        "idx-chunk-size: answered when it should have abstained",
+        "idx-milestones: answered when it should have abstained"
+      ]
+    },
+    {
+      "threshold": 0.58328795,
+      "recallAtK": 1,
+      "abstentionAccuracy": 0.2222222222222222,
+      "falseAbstentions": 0,
+      "answerable": 30,
+      "abstainTotal": 9,
+      "failures": [
+        "off-pricing: answered when it should have abstained",
+        "off-part-number: answered when it should have abstained",
+        "off-soc2: answered when it should have abstained",
+        "off-kubernetes: answered when it should have abstained",
+        "off-ceo: answered when it should have abstained",
+        "idx-chunk-size: answered when it should have abstained",
+        "idx-milestones: answered when it should have abstained"
+      ]
+    },
+    {
+      "threshold": 0.60510427,
+      "recallAtK": 0.9333333333333333,
+      "abstentionAccuracy": 0.3333333333333333,
+      "falseAbstentions": 2,
+      "answerable": 30,
+      "abstainTotal": 9,
+      "failures": [
+        "sidebar-layout: abstained on an answerable question",
+        "cors-policy: abstained on an answerable question",
+        "off-pricing: answered when it should have abstained",
+        "off-soc2: answered when it should have abstained",
+        "off-kubernetes: answered when it should have abstained",
+        "off-ceo: answered when it should have abstained",
+        "idx-chunk-size: answered when it should have abstained",
+        "idx-milestones: answered when it should have abstained"
+      ]
+    },
+    {
+      "threshold": 0.6297035200000001,
+      "recallAtK": 0.9333333333333333,
+      "abstentionAccuracy": 0.5555555555555556,
+      "falseAbstentions": 2,
+      "answerable": 30,
+      "abstainTotal": 9,
+      "failures": [
+        "sidebar-layout: abstained on an answerable question",
+        "cors-policy: abstained on an answerable question",
+        "off-pricing: answered when it should have abstained",
+        "off-soc2: answered when it should have abstained",
+        "off-ceo: answered when it should have abstained",
+        "idx-chunk-size: answered when it should have abstained"
+      ]
+    },
+    {
+      "threshold": 0.6646788699999999,
+      "recallAtK": 0.7,
+      "abstentionAccuracy": 0.7777777777777778,
+      "falseAbstentions": 7,
+      "answerable": 30,
+      "abstainTotal": 9,
+      "failures": [
+        "password-hashing: abstained on an answerable question",
+        "breach-check: abstained on an answerable question",
+        "forgot-password-response: abstained on an answerable question",
+        "env-validation: abstained on an answerable question",
+        "keyboard-shortcuts: abstained on an answerable question",
+        "delete-account: expected evidence not in top 5",
+        "sidebar-layout: abstained on an answerable question",
+        "tenancy-defense: expected evidence not in top 5",
+        "cors-policy: abstained on an answerable question",
+        "off-ceo: answered when it should have abstained",
+        "idx-chunk-size: answered when it should have abstained"
+      ]
+    }
+  ],
+  "results": [
+    {
+      "id": "rate-limit-login",
+      "kind": "factual",
+      "query": "What is the rate limit on the login endpoint?",
+      "expectedDocuments": [
+        "04-data-and-api.md"
+      ],
+      "expectAbstain": false,
+      "candidates": [
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f989-72fd-81ea-a4cd34a4ed48",
+          "score": 0.01639344262295082,
+          "vectorScore": 0.75330544
+        },
+        {
+          "documentName": "06-roadmap.md",
+          "chunkId": "019fe66f-fd7c-73e7-a1a4-7378cec212a2",
+          "score": 0.01639344262295082,
+          "vectorScore": null
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f988-79a2-8524-808e796a2d6c",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.62717086
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f988-7370-a396-e407d8b0c9a7",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.6220175
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f988-74e6-9b94-cda9eab5ef28",
+          "score": 0.015625,
+          "vectorScore": 0.6202973
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb8-745b-a329-3ba0c4f52555",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.61734265
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeba-7878-80da-6eae19742481",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.6072533
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-7061-b0eb-7d7b5f589fa8",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.6066386699999999
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eebc-793b-a6bf-2aedf2996ed3",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.60100955
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-7086-a1c9-5db707115799",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.60053945
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-787f-98e8-e2581a757e6c",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.60046852
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60e-7653-b165-8bbd12bba7fe",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.5993927
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 1,
+      "degraded": [],
+      "retrievalMs": 628,
+      "error": null
+    },
+    {
+      "id": "rate-limit-global",
+      "kind": "factual",
+      "query": "What is the global per-IP rate limit?",
+      "expectedDocuments": [
+        "04-data-and-api.md"
+      ],
+      "expectAbstain": false,
+      "candidates": [
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-787f-98e8-e2581a757e6c",
+          "score": 0.03177805800756621,
+          "vectorScore": 0.59107137
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f989-72fd-81ea-a4cd34a4ed48",
+          "score": 0.01639344262295082,
+          "vectorScore": 0.7311601
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb8-745b-a329-3ba0c4f52555",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.6007874
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb8-731a-98ed-cd609286c682",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.59316623
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60f-78ca-a543-df818f6b641f",
+          "score": 0.015625,
+          "vectorScore": 0.5915457
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60e-7653-b165-8bbd12bba7fe",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.57990944
+        },
+        {
+          "documentName": "README.md",
+          "chunkId": "019fe670-0167-7490-8191-adf166538bbb",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.57777417
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-7aa9-a870-3bcead02ca3b",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.5771041
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f199-7932-918b-8acdb04279bb",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.57444596
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb8-7b1c-a6fe-acbbde970160",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.57091707
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f19b-79ec-a8cd-68af9e8f619c",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.57059962
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f988-74e6-9b94-cda9eab5ef28",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.5698523
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 1,
+      "degraded": [],
+      "retrievalMs": 516,
+      "error": null
+    },
+    {
+      "id": "rate-limit-uploads",
+      "kind": "section-specific",
+      "query": "How many documents can a user upload per hour?",
+      "expectedDocuments": [
+        "04-data-and-api.md"
+      ],
+      "expectAbstain": false,
+      "candidates": [
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f989-72fd-81ea-a4cd34a4ed48",
+          "score": 0.01639344262295082,
+          "vectorScore": 0.70651126
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eebc-7647-9705-af9ecab31617",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.6804939999999999
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f985-79ae-aa91-ea9722be0a27",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.62345433
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb7-76f8-8840-0e83c0cff8f8",
+          "score": 0.015625,
+          "vectorScore": 0.62155443
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60e-7ac7-8d79-fcf18ec58bb2",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.6190768
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb7-7f27-a12a-8652465f9662",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.61737204
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60f-78ca-a543-df818f6b641f",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.6124785500000001
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb8-745b-a329-3ba0c4f52555",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.6097887799999999
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f986-7f05-9ceb-01c9af9ccc42",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.60428673
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60e-7653-b165-8bbd12bba7fe",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.6039254000000001
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb9-7515-8a70-a96e56af2298",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.6034438
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-787f-98e8-e2581a757e6c",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.6020034000000001
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 0,
+      "degraded": [],
+      "retrievalMs": 582,
+      "error": null
+    },
+    {
+      "id": "password-hashing",
+      "kind": "factual",
+      "query": "How are passwords hashed?",
+      "expectedDocuments": [
+        "04-data-and-api.md",
+        "03-backend.md"
+      ],
+      "expectAbstain": false,
+      "candidates": [
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f988-79a2-8524-808e796a2d6c",
+          "score": 0.03252247488101534,
+          "vectorScore": 0.64179087
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f985-73ff-a878-c4ef33fb93a1",
+          "score": 0.03177805800756621,
+          "vectorScore": 0.5795901999999999
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb8-745b-a329-3ba0c4f52555",
+          "score": 0.031746031746031744,
+          "vectorScore": 0.59190565
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeba-7878-80da-6eae19742481",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.60714018
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f988-7370-a396-e407d8b0c9a7",
+          "score": 0.015625,
+          "vectorScore": 0.5914955
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f989-77e6-b76a-beae0ced57b8",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.57852608
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-787f-98e8-e2581a757e6c",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.57840967
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f985-763d-b341-a8d4fb896f2c",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.5733307599999999
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-7c89-a72b-947d3b9a488c",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.570171
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60c-7325-8772-5083507771ea",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.5697137
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f985-727a-b515-b978d4bb086a",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.56228715
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f989-72fd-81ea-a4cd34a4ed48",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.56097722
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 3,
+      "degraded": [],
+      "retrievalMs": 518,
+      "error": null
+    },
+    {
+      "id": "breach-check",
+      "kind": "citation-sensitive",
+      "query": "How is a new password checked against breached password lists without sending it anywhere?",
+      "expectedDocuments": [
+        "04-data-and-api.md"
+      ],
+      "expectAbstain": false,
+      "candidates": [
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f988-79a2-8524-808e796a2d6c",
+          "score": 0.01639344262295082,
+          "vectorScore": 0.6463676
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb8-745b-a329-3ba0c4f52555",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.62273914
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeba-7878-80da-6eae19742481",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.60590404
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f989-77e6-b76a-beae0ced57b8",
+          "score": 0.015625,
+          "vectorScore": 0.60456175
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f988-74e6-9b94-cda9eab5ef28",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.6037051
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60c-7325-8772-5083507771ea",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.59332538
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f985-763d-b341-a8d4fb896f2c",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.5891229499999999
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f988-7370-a396-e407d8b0c9a7",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.58666253
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-787f-98e8-e2581a757e6c",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.5801149
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb8-731a-98ed-cd609286c682",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.5770777
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-7c89-a72b-947d3b9a488c",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.5744897
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f989-72fd-81ea-a4cd34a4ed48",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.5721039800000001
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 0,
+      "degraded": [],
+      "retrievalMs": 513,
+      "error": null
+    },
+    {
+      "id": "reset-token-ttl",
+      "kind": "factual",
+      "query": "How long is a password reset token valid and can it be reused?",
+      "expectedDocuments": [
+        "04-data-and-api.md"
+      ],
+      "expectAbstain": false,
+      "candidates": [
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f988-74e6-9b94-cda9eab5ef28",
+          "score": 0.01639344262295082,
+          "vectorScore": 0.67138213
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f988-79a2-8524-808e796a2d6c",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.64362133
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f988-7370-a396-e407d8b0c9a7",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.6369002
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f989-72fd-81ea-a4cd34a4ed48",
+          "score": 0.015625,
+          "vectorScore": 0.6070849300000001
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb8-745b-a329-3ba0c4f52555",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.59543765
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeba-7878-80da-6eae19742481",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.5855352300000001
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f985-73ff-a878-c4ef33fb93a1",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.56889504
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-787f-98e8-e2581a757e6c",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.5667091
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-7061-b0eb-7d7b5f589fa8",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.5654549600000001
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb7-76f8-8840-0e83c0cff8f8",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.55835897
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f989-77e6-b76a-beae0ced57b8",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.54813093
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eead-7dfe-80db-112e71b09962",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.54597574
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 0,
+      "degraded": [],
+      "retrievalMs": 532,
+      "error": null
+    },
+    {
+      "id": "verification-token-ttl",
+      "kind": "factual",
+      "query": "What is the TTL of an email verification token?",
+      "expectedDocuments": [
+        "04-data-and-api.md"
+      ],
+      "expectAbstain": false,
+      "candidates": [
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f988-79a2-8524-808e796a2d6c",
+          "score": 0.03278688524590164,
+          "vectorScore": 0.6663022599999999
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f988-7370-a396-e407d8b0c9a7",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.65895796
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f989-72fd-81ea-a4cd34a4ed48",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.6221195500000001
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f988-74e6-9b94-cda9eab5ef28",
+          "score": 0.015625,
+          "vectorScore": 0.6207323
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f985-73ff-a878-c4ef33fb93a1",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.6021977700000001
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb8-745b-a329-3ba0c4f52555",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.59184825
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeba-7878-80da-6eae19742481",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.59124357
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-787f-98e8-e2581a757e6c",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.58969647
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb7-76f8-8840-0e83c0cff8f8",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.5861111999999999
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eebb-7bd3-ac23-c164457f8728",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.58232492
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-7061-b0eb-7d7b5f589fa8",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.57930678
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-7c89-a72b-947d3b9a488c",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.57165182
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 1,
+      "degraded": [],
+      "retrievalMs": 479,
+      "error": null
+    },
+    {
+      "id": "reset-revokes-sessions",
+      "kind": "multi-chunk",
+      "query": "What happens to existing sessions and access tokens when a password is reset?",
+      "expectedDocuments": [
+        "04-data-and-api.md"
+      ],
+      "expectAbstain": false,
+      "candidates": [
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f988-74e6-9b94-cda9eab5ef28",
+          "score": 0.01639344262295082,
+          "vectorScore": 0.6911235
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f988-79a2-8524-808e796a2d6c",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.68550706
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f988-7370-a396-e407d8b0c9a7",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.67382407
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeba-7878-80da-6eae19742481",
+          "score": 0.015625,
+          "vectorScore": 0.6249897
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb8-745b-a329-3ba0c4f52555",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.6172431
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-787f-98e8-e2581a757e6c",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.61309725
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb7-76f8-8840-0e83c0cff8f8",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.6052320600000001
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f989-72fd-81ea-a4cd34a4ed48",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.6046552700000001
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-7a70-8d6d-6a126618ed7a",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.6006644400000001
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-7061-b0eb-7d7b5f589fa8",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.59805077
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f985-73ff-a878-c4ef33fb93a1",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.5940646
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-7086-a1c9-5db707115799",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.5919015400000001
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 0,
+      "degraded": [],
+      "retrievalMs": 491,
+      "error": null
+    },
+    {
+      "id": "forgot-password-response",
+      "kind": "adversarial",
+      "query": "Does forgot-password reveal whether an account exists?",
+      "expectedDocuments": [
+        "04-data-and-api.md"
+      ],
+      "expectAbstain": false,
+      "candidates": [
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeba-7878-80da-6eae19742481",
+          "score": 0.01639344262295082,
+          "vectorScore": 0.65362722
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f988-79a2-8524-808e796a2d6c",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.6531586
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb7-76f8-8840-0e83c0cff8f8",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.5977201
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f989-72fd-81ea-a4cd34a4ed48",
+          "score": 0.015625,
+          "vectorScore": 0.5899051399999999
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f988-74e6-9b94-cda9eab5ef28",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.5888914000000001
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1ba-7c6d-b619-3d585de565a8",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.584078
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb8-745b-a329-3ba0c4f52555",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.57263184
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eebc-793b-a6bf-2aedf2996ed3",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.56960374
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f985-73ff-a878-c4ef33fb93a1",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.56779265
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f988-7370-a396-e407d8b0c9a7",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.56685913
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-787f-98e8-e2581a757e6c",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.56654322
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eead-7dfe-80db-112e71b09962",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.56344432
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 0,
+      "degraded": [],
+      "retrievalMs": 503,
+      "error": null
+    },
+    {
+      "id": "users-me-endpoints",
+      "kind": "section-specific",
+      "query": "Which endpoints exist under /users/me?",
+      "expectedDocuments": [
+        "04-data-and-api.md"
+      ],
+      "expectAbstain": false,
+      "candidates": [
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f987-764d-8d81-6de980a3b461",
+          "score": 0.01639344262295082,
+          "vectorScore": 0.67746007
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f989-72fd-81ea-a4cd34a4ed48",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.63063037
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f987-7de2-8259-5b98d16153bd",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.62100446
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f988-76e1-b50f-0711a26be076",
+          "score": 0.015625,
+          "vectorScore": 0.62035203
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb7-76f8-8840-0e83c0cff8f8",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.6187806
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f988-7370-a396-e407d8b0c9a7",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.61731428
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb7-7f27-a12a-8652465f9662",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.61466223
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f988-79a2-8524-808e796a2d6c",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.61360562
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb9-739a-ae22-ac65bf47fdea",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.6132658
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-787f-98e8-e2581a757e6c",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.61053705
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f988-787d-95d8-22db7e51dc0a",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.60902297
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f985-763d-b341-a8d4fb896f2c",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.60829097
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 0,
+      "degraded": [],
+      "retrievalMs": 490,
+      "error": null
+    },
+    {
+      "id": "error-response-shape",
+      "kind": "factual",
+      "query": "What status code does a Zod validation error produce and what is returned for an unrecognized error?",
+      "expectedDocuments": [
+        "03-backend.md"
+      ],
+      "expectAbstain": false,
+      "candidates": [
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-763e-91b1-c7fae19cce4f",
+          "score": 0.01639344262295082,
+          "vectorScore": 0.7229792500000001
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-787f-98e8-e2581a757e6c",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.63963413
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eebd-723e-a540-a7283a729c85",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.63121414
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-7c89-a72b-947d3b9a488c",
+          "score": 0.015625,
+          "vectorScore": 0.6224764
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f987-7de2-8259-5b98d16153bd",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.62241596
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bc-7041-9a2d-993f322b894f",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.6218695000000001
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1ba-75f0-a4d2-5e9818b0ecd6",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.61258966
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-7061-b0eb-7d7b5f589fa8",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.6016382
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eead-7dfe-80db-112e71b09962",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.59628516
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f989-77e6-b76a-beae0ced57b8",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.5941723
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1b8-7695-831d-6a431ef0dc34",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.59414387
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60f-7d9e-abd4-5b021aaa55bf",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.58989245
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 0,
+      "degraded": [],
+      "retrievalMs": 494,
+      "error": null
+    },
+    {
+      "id": "why-kysely",
+      "kind": "multi-chunk",
+      "query": "Why was Kysely chosen instead of Prisma or TypeORM?",
+      "expectedDocuments": [
+        "03-backend.md"
+      ],
+      "expectAbstain": false,
+      "candidates": [
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60c-7325-8772-5083507771ea",
+          "score": 0.03278688524590164,
+          "vectorScore": 0.7174127
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1b8-7695-831d-6a431ef0dc34",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.67716438
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f987-7b20-8572-e530554aff58",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.65413517
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60c-7953-9d6a-e112a21db8de",
+          "score": 0.015625,
+          "vectorScore": 0.6487853
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-7061-b0eb-7d7b5f589fa8",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.6257617
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-7aa9-a870-3bcead02ca3b",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.62437868
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f985-727a-b515-b978d4bb086a",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.6233785199999999
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60b-7b75-b9de-e82bf4157026",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.6206006399999999
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60e-7653-b165-8bbd12bba7fe",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.6197431
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-7d4b-a19c-d0e8666471a9",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.61497694
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb8-731a-98ed-cd609286c682",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.61414802
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f987-7de2-8259-5b98d16153bd",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.61185998
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 1,
+      "degraded": [],
+      "retrievalMs": 600,
+      "error": null
+    },
+    {
+      "id": "validate-replaces-body",
+      "kind": "citation-sensitive",
+      "query": "Why does the validate middleware replace req.body rather than just checking it?",
+      "expectedDocuments": [
+        "03-backend.md"
+      ],
+      "expectAbstain": false,
+      "candidates": [
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-787f-98e8-e2581a757e6c",
+          "score": 0.01639344262295082,
+          "vectorScore": 0.6780848500000001
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1ba-75f0-a4d2-5e9818b0ecd6",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.6126672
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60c-7325-8772-5083507771ea",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.61021852
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f989-77e6-b76a-beae0ced57b8",
+          "score": 0.015625,
+          "vectorScore": 0.60718107
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-7061-b0eb-7d7b5f589fa8",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.5956161
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-7c89-a72b-947d3b9a488c",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.59368634
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60c-75ae-8d79-3fe4c46353d1",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.5901065999999999
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1b8-7695-831d-6a431ef0dc34",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.5871402
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-763e-91b1-c7fae19cce4f",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.58374715
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60b-7b75-b9de-e82bf4157026",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.5835942000000001
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-7aa9-a870-3bcead02ca3b",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.5805032800000001
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-7086-a1c9-5db707115799",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.5753575
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 0,
+      "degraded": [],
+      "retrievalMs": 601,
+      "error": null
+    },
+    {
+      "id": "job-claiming",
+      "kind": "factual",
+      "query": "What Postgres locking clause is used to claim background jobs?",
+      "expectedDocuments": [
+        "03-backend.md"
+      ],
+      "expectAbstain": false,
+      "candidates": [
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60e-7653-b165-8bbd12bba7fe",
+          "score": 0.01639344262295082,
+          "vectorScore": 0.70129138
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f986-7acc-98df-d4308e9efa09",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.62944221
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f985-727a-b515-b978d4bb086a",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.6092649
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60e-7ac7-8d79-fcf18ec58bb2",
+          "score": 0.015625,
+          "vectorScore": 0.60609716
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f986-71d5-9c39-5eff324e34a6",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.60459584
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f987-7b20-8572-e530554aff58",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.60029936
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f985-73ff-a878-c4ef33fb93a1",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.59973603
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60c-7325-8772-5083507771ea",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.59959114
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f985-79ae-aa91-ea9722be0a27",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.59512734
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb8-731a-98ed-cd609286c682",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.5918008
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60f-78ca-a543-df818f6b641f",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.58019137
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f988-74e6-9b94-cda9eab5ef28",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.58001584
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 0,
+      "degraded": [],
+      "retrievalMs": 455,
+      "error": null
+    },
+    {
+      "id": "env-validation",
+      "kind": "factual",
+      "query": "What happens at boot if an environment variable is missing?",
+      "expectedDocuments": [
+        "03-backend.md"
+      ],
+      "expectAbstain": false,
+      "candidates": [
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-7c89-a72b-947d3b9a488c",
+          "score": 0.01639344262295082,
+          "vectorScore": 0.66271383
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eead-7dfe-80db-112e71b09962",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.59216088
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eebd-723e-a540-a7283a729c85",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.5876351
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb7-77ed-8048-d7e905881ace",
+          "score": 0.015625,
+          "vectorScore": 0.57936877
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-7aa9-a870-3bcead02ca3b",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.57666314
+        },
+        {
+          "documentName": "README.md",
+          "chunkId": "019fe670-0167-7490-8191-adf166538bbb",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.57529193
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-787f-98e8-e2581a757e6c",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.57289773
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-763e-91b1-c7fae19cce4f",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.5697912
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f196-76ff-b05b-a160fcfccff6",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.56712335
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb8-745b-a329-3ba0c4f52555",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.5664736
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeba-7878-80da-6eae19742481",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.56450886
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeba-77d6-8d18-c74efbf3d715",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.56433195
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 0,
+      "degraded": [],
+      "retrievalMs": 501,
+      "error": null
+    },
+    {
+      "id": "logging-redaction",
+      "kind": "section-specific",
+      "query": "What logging library is used and what is redacted?",
+      "expectedDocuments": [
+        "03-backend.md"
+      ],
+      "expectAbstain": false,
+      "candidates": [
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60e-7ac7-8d79-fcf18ec58bb2",
+          "score": 0.01639344262295082,
+          "vectorScore": 0.7044329
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-7aa9-a870-3bcead02ca3b",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.63837647
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60e-7653-b165-8bbd12bba7fe",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.6316489000000001
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f989-77e6-b76a-beae0ced57b8",
+          "score": 0.015625,
+          "vectorScore": 0.61464626
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60f-78ca-a543-df818f6b641f",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.61245131
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60c-7325-8772-5083507771ea",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.61082584
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eebc-7e13-b7ea-e802a5f98e36",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.61071038
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1b8-7695-831d-6a431ef0dc34",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.6078257
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-7c89-a72b-947d3b9a488c",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.6007627799999999
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-7d4b-a19c-d0e8666471a9",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.60064834
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bc-7041-9a2d-993f322b894f",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.5994786
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-7086-a1c9-5db707115799",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.59883767
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 0,
+      "degraded": [],
+      "retrievalMs": 537,
+      "error": null
+    },
+    {
+      "id": "stack-traces",
+      "kind": "adversarial",
+      "query": "Are stack traces or provider error messages ever sent to the client?",
+      "expectedDocuments": [
+        "03-backend.md",
+        "04-data-and-api.md"
+      ],
+      "expectAbstain": false,
+      "candidates": [
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-763e-91b1-c7fae19cce4f",
+          "score": 0.03278688524590164,
+          "vectorScore": 0.6981685200000001
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60e-7ac7-8d79-fcf18ec58bb2",
+          "score": 0.031024531024531024,
+          "vectorScore": 0.63434464
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f989-77e6-b76a-beae0ced57b8",
+          "score": 0.02964254577157803,
+          "vectorScore": 0.6171497699999999
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bc-7041-9a2d-993f322b894f",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.6858669
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eebd-723e-a540-a7283a729c85",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.6643631
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-7d4b-a19c-d0e8666471a9",
+          "score": 0.015625,
+          "vectorScore": 0.63834095
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-7a49-b9e7-aaf3fcf9751a",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.6372937599999999
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-7a70-8d6d-6a126618ed7a",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.6328665
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-7086-a1c9-5db707115799",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.62873024
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60f-78ca-a543-df818f6b641f",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.62811238
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eebc-7e13-b7ea-e802a5f98e36",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.62465435
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-787f-98e8-e2581a757e6c",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.62432444
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 3,
+      "degraded": [],
+      "retrievalMs": 553,
+      "error": null
+    },
+    {
+      "id": "route-guards",
+      "kind": "factual",
+      "query": "What are the three route guards in the frontend and why are they separate?",
+      "expectedDocuments": [
+        "02-frontend.md"
+      ],
+      "expectAbstain": false,
+      "candidates": [
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1ba-7c6d-b619-3d585de565a8",
+          "score": 0.01639344262295082,
+          "vectorScore": 0.7073834
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-7086-a1c9-5db707115799",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.6693325
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-787f-98e8-e2581a757e6c",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.66481638
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1b8-73f4-aacc-0533642c5bfa",
+          "score": 0.015625,
+          "vectorScore": 0.6491943
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-7061-b0eb-7d7b5f589fa8",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.64050615
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60b-7f34-acec-a476bbe3c0f8",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.63068664
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bc-7041-9a2d-993f322b894f",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.63067406
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60c-7325-8772-5083507771ea",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.6246978599999999
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1ba-75f0-a4d2-5e9818b0ecd6",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.62437356
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb9-739a-ae22-ac65bf47fdea",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.6239929200000001
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1b8-7695-831d-6a431ef0dc34",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.6158713
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1b9-7e37-88f0-f60f4e6b5196",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.61356342
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 0,
+      "degraded": [],
+      "retrievalMs": 489,
+      "error": null
+    },
+    {
+      "id": "url-is-state",
+      "kind": "citation-sensitive",
+      "query": "Which pieces of state belong in the URL rather than in memory?",
+      "expectedDocuments": [
+        "02-frontend.md"
+      ],
+      "expectAbstain": false,
+      "candidates": [
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-734e-ac9b-e71f1e3dce22",
+          "score": 0.01639344262295082,
+          "vectorScore": 0.75360733
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-7a49-b9e7-aaf3fcf9751a",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.67791212
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-7d4b-a19c-d0e8666471a9",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.67297167
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb9-739a-ae22-ac65bf47fdea",
+          "score": 0.015625,
+          "vectorScore": 0.66377878
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-7086-a1c9-5db707115799",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.66309416
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f987-7de2-8259-5b98d16153bd",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.65878808
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1b8-7695-831d-6a431ef0dc34",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.64880598
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-73da-bf1e-d6d22e820970",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.6413401400000001
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60c-7325-8772-5083507771ea",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.6400162
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-7a70-8d6d-6a126618ed7a",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.63825345
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeba-77d6-8d18-c74efbf3d715",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.63234168
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1b8-73f4-aacc-0533642c5bfa",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.62811768
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 0,
+      "degraded": [],
+      "retrievalMs": 627,
+      "error": null
+    },
+    {
+      "id": "error-boundaries",
+      "kind": "multi-document",
+      "query": "At which levels are React error boundaries placed?",
+      "expectedDocuments": [
+        "02-frontend.md",
+        "00-product.md"
+      ],
+      "expectAbstain": false,
+      "candidates": [
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bc-7041-9a2d-993f322b894f",
+          "score": 0.01639344262295082,
+          "vectorScore": 0.7136001000000001
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eebd-723e-a540-a7283a729c85",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.69448173
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f19c-7f07-b243-6b36edc467aa",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.63206863
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-7a70-8d6d-6a126618ed7a",
+          "score": 0.015625,
+          "vectorScore": 0.6296558400000001
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1b8-73f4-aacc-0533642c5bfa",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.62803447
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-7a49-b9e7-aaf3fcf9751a",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.6253069600000001
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-7061-b0eb-7d7b5f589fa8",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.6170112999999999
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1ba-7c6d-b619-3d585de565a8",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.6167372
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-763e-91b1-c7fae19cce4f",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.6145303799999999
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1b9-7e37-88f0-f60f4e6b5196",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.6136889999999999
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-734e-ac9b-e71f1e3dce22",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.61145425
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1b9-7f11-a8b7-f68ddb487db8",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.61077464
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 0,
+      "degraded": [],
+      "retrievalMs": 483,
+      "error": null
+    },
+    {
+      "id": "settings-routes",
+      "kind": "multi-document",
+      "query": "What sub-pages does the settings section have?",
+      "expectedDocuments": [
+        "00-product.md",
+        "02-frontend.md"
+      ],
+      "expectAbstain": false,
+      "candidates": [
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eebc-75dc-a02e-63515cbf0afa",
+          "score": 0.01639344262295082,
+          "vectorScore": 0.6998762000000001
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb7-7f27-a12a-8652465f9662",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.65574902
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb9-739a-ae22-ac65bf47fdea",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.63990808
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb7-76f8-8840-0e83c0cff8f8",
+          "score": 0.015625,
+          "vectorScore": 0.63598746
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60c-71cf-a594-9acd0a2cad5e",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.61684972
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeba-77d6-8d18-c74efbf3d715",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.60593724
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb9-79c8-9ad5-5b2d7fdbb803",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.6044403300000001
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1ba-7c6d-b619-3d585de565a8",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.60163552
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeba-7878-80da-6eae19742481",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.5978424
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f196-76ff-b05b-a160fcfccff6",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.59531432
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-734e-ac9b-e71f1e3dce22",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.59392035
+        },
+        {
+          "documentName": "README.md",
+          "chunkId": "019fe670-0167-7c65-99cc-c9c8f2116c63",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.5929392600000001
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 0,
+      "degraded": [],
+      "retrievalMs": 544,
+      "error": null
+    },
+    {
+      "id": "keyboard-shortcuts",
+      "kind": "section-specific",
+      "query": "What is the global keyboard shortcut map?",
+      "expectedDocuments": [
+        "00-product.md"
+      ],
+      "expectAbstain": false,
+      "candidates": [
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb9-79c8-9ad5-5b2d7fdbb803",
+          "score": 0.03278688524590164,
+          "vectorScore": 0.64171267
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb9-739a-ae22-ac65bf47fdea",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.5917188
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f19e-7989-adf9-1d639a60f047",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.59001112
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb7-77ed-8048-d7e905881ace",
+          "score": 0.015625,
+          "vectorScore": 0.5896855599999999
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-734e-ac9b-e71f1e3dce22",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.5763871700000001
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f196-76ff-b05b-a160fcfccff6",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.5741058
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1b9-7f11-a8b7-f68ddb487db8",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.57162338
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bc-7041-9a2d-993f322b894f",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.5713429999999999
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeba-77d6-8d18-c74efbf3d715",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.56860387
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-7a70-8d6d-6a126618ed7a",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.56834787
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f19a-7264-9972-56d8ea596c46",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.5677802000000001
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f19e-76a8-9afc-98db4cbcceb6",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.5664684799999999
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 1,
+      "degraded": [],
+      "retrievalMs": 505,
+      "error": null
+    },
+    {
+      "id": "delete-account",
+      "kind": "factual",
+      "query": "What does deleting an account cascade to?",
+      "expectedDocuments": [
+        "00-product.md"
+      ],
+      "expectAbstain": false,
+      "candidates": [
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb7-7f27-a12a-8652465f9662",
+          "score": 0.03028233151183971,
+          "vectorScore": 0.5926653
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eebc-75dc-a02e-63515cbf0afa",
+          "score": 0.01639344262295082,
+          "vectorScore": 0.6387758299999999
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f986-7acc-98df-d4308e9efa09",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.6130277
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f987-764d-8d81-6de980a3b461",
+          "score": 0.016129032258064516,
+          "vectorScore": null
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f988-79a2-8524-808e796a2d6c",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.6067817200000001
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f987-7b20-8572-e530554aff58",
+          "score": 0.015625,
+          "vectorScore": 0.60362238
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb7-76f8-8840-0e83c0cff8f8",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.60301173
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeba-7878-80da-6eae19742481",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.60254854
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f988-74e6-9b94-cda9eab5ef28",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.60149288
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb9-739a-ae22-ac65bf47fdea",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.5985189
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb8-745b-a329-3ba0c4f52555",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.59482557
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f986-7f05-9ceb-01c9af9ccc42",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.5935898399999999
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 2,
+      "degraded": [],
+      "retrievalMs": 513,
+      "error": null
+    },
+    {
+      "id": "sidebar-layout",
+      "kind": "citation-sensitive",
+      "query": "Why are Documents and Settings pinned to the bottom of the sidebar?",
+      "expectedDocuments": [
+        "00-product.md"
+      ],
+      "expectAbstain": false,
+      "candidates": [
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb9-79c8-9ad5-5b2d7fdbb803",
+          "score": 0.03252247488101534,
+          "vectorScore": 0.59527087
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb7-7f27-a12a-8652465f9662",
+          "score": 0.01639344262295082,
+          "vectorScore": 0.6045944
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb9-739a-ae22-ac65bf47fdea",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.59170878
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb7-76f8-8840-0e83c0cff8f8",
+          "score": 0.015625,
+          "vectorScore": 0.5874493000000001
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60c-71cf-a594-9acd0a2cad5e",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.5849166
+        },
+        {
+          "documentName": "README.md",
+          "chunkId": "019fe670-0167-7c65-99cc-c9c8f2116c63",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.5834143199999999
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f196-76ff-b05b-a160fcfccff6",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.5782026
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eebc-7647-9705-af9ecab31617",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.5753669699999999
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb9-7515-8a70-a96e56af2298",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.57400465
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eebc-793b-a6bf-2aedf2996ed3",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.5695001
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f986-7f05-9ceb-01c9af9ccc42",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.56847632
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeba-7528-aa91-11d99a211fbf",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.56766278
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 1,
+      "degraded": [],
+      "retrievalMs": 456,
+      "error": null
+    },
+    {
+      "id": "document-delete-warning",
+      "kind": "multi-chunk",
+      "query": "What happens to existing conversations when a document is deleted?",
+      "expectedDocuments": [
+        "00-product.md"
+      ],
+      "expectAbstain": false,
+      "candidates": [
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb7-7f27-a12a-8652465f9662",
+          "score": 0.01639344262295082,
+          "vectorScore": 0.6666518
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f988-76e1-b50f-0711a26be076",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.6652364
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f987-764d-8d81-6de980a3b461",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.6429714
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb9-7515-8a70-a96e56af2298",
+          "score": 0.015625,
+          "vectorScore": 0.6388666599999999
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60f-78ca-a543-df818f6b641f",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.62095678
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eebc-7647-9705-af9ecab31617",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.6157520400000001
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f986-71d5-9c39-5eff324e34a6",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.61366308
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f986-7acc-98df-d4308e9efa09",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.60985154
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eebc-793b-a6bf-2aedf2996ed3",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.60568994
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb8-731a-98ed-cd609286c682",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.60510427
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb7-76f8-8840-0e83c0cff8f8",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.60122633
+        },
+        {
+          "documentName": "README.md",
+          "chunkId": "019fe670-0167-7c65-99cc-c9c8f2116c63",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.59973842
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 0,
+      "degraded": [],
+      "retrievalMs": 567,
+      "error": null
+    },
+    {
+      "id": "design-tokens",
+      "kind": "section-specific",
+      "query": "What categories of design tokens are defined?",
+      "expectedDocuments": [
+        "01-design-system.md"
+      ],
+      "expectAbstain": false,
+      "candidates": [
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f199-75e3-afe7-0217094f734a",
+          "score": 0.01639344262295082,
+          "vectorScore": 0.7108429700000001
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f19a-7264-9972-56d8ea596c46",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.69917893
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f196-76ff-b05b-a160fcfccff6",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.6932554799999999
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f19b-74f4-95d3-aa5f9e663dc7",
+          "score": 0.015625,
+          "vectorScore": 0.6857136500000001
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f19b-79ec-a8cd-68af9e8f619c",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.6686624299999999
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f19b-7ac7-82b9-42f85d349879",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.66694385
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f199-7932-918b-8acdb04279bb",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.6620448800000001
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f19c-7f07-b243-6b36edc467aa",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.66093475
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f19e-7125-8166-b816baa11c72",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.6601773
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f19f-7697-a3d4-e04e266be074",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.65863454
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f19b-7647-b4d3-1adf9d0ee730",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.65752614
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f19a-7cfb-88a7-bed9c058d34f",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.65134203
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 0,
+      "degraded": [],
+      "retrievalMs": 475,
+      "error": null
+    },
+    {
+      "id": "component-tiers",
+      "kind": "factual",
+      "query": "What are the three tiers of components?",
+      "expectedDocuments": [
+        "01-design-system.md"
+      ],
+      "expectAbstain": false,
+      "candidates": [
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f19c-7f07-b243-6b36edc467aa",
+          "score": 0.03278688524590164,
+          "vectorScore": 0.71795857
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-7061-b0eb-7d7b5f589fa8",
+          "score": 0.0315136476426799,
+          "vectorScore": 0.63842088
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f19e-7125-8166-b816baa11c72",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.6953863
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60b-7f34-acec-a476bbe3c0f8",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.6539680999999999
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1b8-73f4-aacc-0533642c5bfa",
+          "score": 0.015625,
+          "vectorScore": 0.6421998
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1ba-75f0-a4d2-5e9818b0ecd6",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.63522208
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1ba-7dc5-982e-a9be76eddf9d",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.6322546600000001
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1b9-7f11-a8b7-f68ddb487db8",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.6296531000000001
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1b9-7e37-88f0-f60f4e6b5196",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.6246763
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60b-7b75-b9de-e82bf4157026",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.6186999
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb7-77ed-8048-d7e905881ace",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.61837226
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f196-76ff-b05b-a160fcfccff6",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.61768365
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 2,
+      "degraded": [],
+      "retrievalMs": 548,
+      "error": null
+    },
+    {
+      "id": "document-set",
+      "kind": "factual",
+      "query": "What documents make up this design document set and in what order should they be read?",
+      "expectedDocuments": [
+        "README.md"
+      ],
+      "expectAbstain": false,
+      "candidates": [
+        {
+          "documentName": "README.md",
+          "chunkId": "019fe670-0167-7c65-99cc-c9c8f2116c63",
+          "score": 0.01639344262295082,
+          "vectorScore": 0.79128063
+        },
+        {
+          "documentName": "README.md",
+          "chunkId": "019fe670-0167-7b72-ba0b-d1e75a56bc95",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.7147017
+        },
+        {
+          "documentName": "README.md",
+          "chunkId": "019fe670-0167-7490-8191-adf166538bbb",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.68831122
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60b-7f34-acec-a476bbe3c0f8",
+          "score": 0.015625,
+          "vectorScore": 0.6730430700000001
+        },
+        {
+          "documentName": "README.md",
+          "chunkId": "019fe670-0165-740f-a13e-3a4fe6aebf2d",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.67261982
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb9-739a-ae22-ac65bf47fdea",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.6694941
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f985-7a07-b6b0-3bb8f956f596",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.6646788699999999
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb9-7515-8a70-a96e56af2298",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.6621133699999999
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f196-76ff-b05b-a160fcfccff6",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.6614753600000001
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eebc-7647-9705-af9ecab31617",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.66110224
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeba-77d6-8d18-c74efbf3d715",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.6594507700000001
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb8-745b-a329-3ba0c4f52555",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.65789163
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 0,
+      "degraded": [],
+      "retrievalMs": 460,
+      "error": null
+    },
+    {
+      "id": "tenancy-defense",
+      "kind": "multi-document",
+      "query": "How is tenant isolation enforced and why are there two layers?",
+      "expectedDocuments": [
+        "04-data-and-api.md"
+      ],
+      "expectAbstain": false,
+      "candidates": [
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60c-7325-8772-5083507771ea",
+          "score": 0.01639344262295082,
+          "vectorScore": 0.6690855600000001
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f986-7f05-9ceb-01c9af9ccc42",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.6491699200000001
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60b-7b75-b9de-e82bf4157026",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.64892143
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-7061-b0eb-7d7b5f589fa8",
+          "score": 0.015625,
+          "vectorScore": 0.63574898
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f989-77e6-b76a-beae0ced57b8",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.63468874
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f986-7acc-98df-d4308e9efa09",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.6269728999999999
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60c-7953-9d6a-e112a21db8de",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.62604207
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60b-7f34-acec-a476bbe3c0f8",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.6236303999999999
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-7aa9-a870-3bcead02ca3b",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.6214919
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1b8-73f4-aacc-0533642c5bfa",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.62069565
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb8-745b-a329-3ba0c4f52555",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.61967105
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-787f-98e8-e2581a757e6c",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.6189538800000001
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 0,
+      "degraded": [],
+      "retrievalMs": 462,
+      "error": null
+    },
+    {
+      "id": "cors-policy",
+      "kind": "factual",
+      "query": "Is a CORS wildcard allowed?",
+      "expectedDocuments": [
+        "04-data-and-api.md"
+      ],
+      "expectAbstain": false,
+      "candidates": [
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f989-77e6-b76a-beae0ced57b8",
+          "score": 0.01639344262295082,
+          "vectorScore": 0.5986306699999999
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-787f-98e8-e2581a757e6c",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.59050018
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1ba-75f0-a4d2-5e9818b0ecd6",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.57277405
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f989-72fd-81ea-a4cd34a4ed48",
+          "score": 0.015625,
+          "vectorScore": 0.570005
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f987-7de2-8259-5b98d16153bd",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.56796807
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bc-7960-a1fc-d23d0ffef603",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.5678903
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb7-77ed-8048-d7e905881ace",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.56683433
+        },
+        {
+          "documentName": "README.md",
+          "chunkId": "019fe670-0167-7490-8191-adf166538bbb",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.5605076600000001
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-7086-a1c9-5db707115799",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.5601285
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-7aa9-a870-3bcead02ca3b",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.55779523
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-7061-b0eb-7d7b5f589fa8",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.5563360500000001
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb8-745b-a329-3ba0c4f52555",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.5558510400000001
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 0,
+      "degraded": [],
+      "retrievalMs": 490,
+      "error": null
+    },
+    {
+      "id": "off-pricing",
+      "kind": "unanswerable",
+      "query": "How much does a Lumora subscription cost per month?",
+      "expectedDocuments": [],
+      "expectAbstain": true,
+      "candidates": [
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb4-71e9-8f72-14a5be1ab28b",
+          "score": 0.01639344262295082,
+          "vectorScore": 0.66338414
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb6-75e0-931f-f3b74af20bce",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.66294712
+        },
+        {
+          "documentName": "README.md",
+          "chunkId": "019fe670-0165-740f-a13e-3a4fe6aebf2d",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.65662134
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeba-7aa6-bd39-8e353a9a4473",
+          "score": 0.015625,
+          "vectorScore": 0.6304396999999999
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb9-79c8-9ad5-5b2d7fdbb803",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.62115276
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeba-7528-aa91-11d99a211fbf",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.61681008
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb9-739a-ae22-ac65bf47fdea",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.61187112
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f19c-7f07-b243-6b36edc467aa",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.6052690700000001
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f19a-7382-907b-52e2bc42252a",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.60245138
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60b-7b75-b9de-e82bf4157026",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.5926260400000001
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f19a-7264-9972-56d8ea596c46",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.59131908
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb6-7afa-826b-1213d91b58d5",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.57107615
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 0,
+      "degraded": [],
+      "retrievalMs": 470,
+      "error": null
+    },
+    {
+      "id": "off-notice-period",
+      "kind": "unanswerable",
+      "query": "What is the notice period for terminating this agreement?",
+      "expectedDocuments": [],
+      "expectAbstain": true,
+      "candidates": [
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60f-78ca-a543-df818f6b641f",
+          "score": 0.01639344262295082,
+          "vectorScore": 0.56800604
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb9-7515-8a70-a96e56af2298",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.55564088
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb6-75e0-931f-f3b74af20bce",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.5549268700000001
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb7-7f27-a12a-8652465f9662",
+          "score": 0.015625,
+          "vectorScore": 0.55395865
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb7-77ed-8048-d7e905881ace",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.54872978
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb4-71e9-8f72-14a5be1ab28b",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.54543233
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb7-76f8-8840-0e83c0cff8f8",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.5450493000000001
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb8-731a-98ed-cd609286c682",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.5443624300000001
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eead-7dfe-80db-112e71b09962",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.54271042
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f986-7acc-98df-d4308e9efa09",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.5418349
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb8-7c10-a438-818f1453e77f",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.5416129199999999
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f989-72fd-81ea-a4cd34a4ed48",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.54149503
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 0,
+      "degraded": [],
+      "retrievalMs": 477,
+      "error": null
+    },
+    {
+      "id": "off-part-number",
+      "kind": "unanswerable",
+      "query": "What is the replacement part number RL-88 used for?",
+      "expectedDocuments": [],
+      "expectAbstain": true,
+      "candidates": [
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eead-7dfe-80db-112e71b09962",
+          "score": 0.01639344262295082,
+          "vectorScore": 0.6007424
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f196-76ff-b05b-a160fcfccff6",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.5589339
+        },
+        {
+          "documentName": "README.md",
+          "chunkId": "019fe670-0167-7b72-ba0b-d1e75a56bc95",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.5533307199999999
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bb-734e-ac9b-e71f1e3dce22",
+          "score": 0.015625,
+          "vectorScore": 0.54883134
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeba-7528-aa91-11d99a211fbf",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.54492158
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60f-78ca-a543-df818f6b641f",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.5447054499999999
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb7-77ed-8048-d7e905881ace",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.54332083
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eebc-7e13-b7ea-e802a5f98e36",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.54279214
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb7-76f8-8840-0e83c0cff8f8",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.54108
+        },
+        {
+          "documentName": "README.md",
+          "chunkId": "019fe670-0165-740f-a13e-3a4fe6aebf2d",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.540717
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb4-71e9-8f72-14a5be1ab28b",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.5406379
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeba-7878-80da-6eae19742481",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.53992486
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 0,
+      "degraded": [],
+      "retrievalMs": 506,
+      "error": null
+    },
+    {
+      "id": "off-soc2",
+      "kind": "unanswerable",
+      "query": "When did Lumora achieve SOC 2 Type II certification?",
+      "expectedDocuments": [],
+      "expectAbstain": true,
+      "candidates": [
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb6-75e0-931f-f3b74af20bce",
+          "score": 0.01639344262295082,
+          "vectorScore": 0.6373019799999999
+        },
+        {
+          "documentName": "README.md",
+          "chunkId": "019fe670-0165-740f-a13e-3a4fe6aebf2d",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.6341607
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb4-71e9-8f72-14a5be1ab28b",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.6210894
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f19a-7382-907b-52e2bc42252a",
+          "score": 0.015625,
+          "vectorScore": 0.61416256
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f19a-7264-9972-56d8ea596c46",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.60115254
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f19c-7f07-b243-6b36edc467aa",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.59750795
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60b-7b75-b9de-e82bf4157026",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.5873325
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb9-739a-ae22-ac65bf47fdea",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.58209312
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeba-7528-aa91-11d99a211fbf",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.56697637
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb8-745b-a329-3ba0c4f52555",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.5664997700000001
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60c-7325-8772-5083507771ea",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.56426078
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb9-79c8-9ad5-5b2d7fdbb803",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.56364685
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 0,
+      "degraded": [],
+      "retrievalMs": 480,
+      "error": null
+    },
+    {
+      "id": "off-kubernetes",
+      "kind": "unanswerable",
+      "query": "How many Kubernetes nodes does the production cluster run?",
+      "expectedDocuments": [],
+      "expectAbstain": true,
+      "candidates": [
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60b-7f34-acec-a476bbe3c0f8",
+          "score": 0.01639344262295082,
+          "vectorScore": 0.6148533199999999
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb8-731a-98ed-cd609286c682",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.61265528
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eead-7dfe-80db-112e71b09962",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.6001920700000001
+        },
+        {
+          "documentName": "README.md",
+          "chunkId": "019fe670-0167-7490-8191-adf166538bbb",
+          "score": 0.015625,
+          "vectorScore": 0.5949443
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb8-745b-a329-3ba0c4f52555",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.5942594400000001
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60f-78ca-a543-df818f6b641f",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.5924939
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60e-7653-b165-8bbd12bba7fe",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.59177548
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb7-77ed-8048-d7e905881ace",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.59148562
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-7c89-a72b-947d3b9a488c",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.58523196
+        },
+        {
+          "documentName": "README.md",
+          "chunkId": "019fe670-0167-7c65-99cc-c9c8f2116c63",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.58328795
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60e-7ac7-8d79-fcf18ec58bb2",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.581854
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60d-7aa9-a870-3bcead02ca3b",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.58111912
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 0,
+      "degraded": [],
+      "retrievalMs": 477,
+      "error": null
+    },
+    {
+      "id": "off-ceo",
+      "kind": "adversarial",
+      "query": "Who is the CEO of Lumora and when was the company founded?",
+      "expectedDocuments": [],
+      "expectAbstain": true,
+      "candidates": [
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb6-75e0-931f-f3b74af20bce",
+          "score": 0.01639344262295082,
+          "vectorScore": 0.6762813999999999
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb4-71e9-8f72-14a5be1ab28b",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.6658312
+        },
+        {
+          "documentName": "README.md",
+          "chunkId": "019fe670-0165-740f-a13e-3a4fe6aebf2d",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.66295677
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeba-7aa6-bd39-8e353a9a4473",
+          "score": 0.015625,
+          "vectorScore": 0.6009728999999999
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb9-79c8-9ad5-5b2d7fdbb803",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.5979247
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60b-7b75-b9de-e82bf4157026",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.5896771599999999
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f19a-7382-907b-52e2bc42252a",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.58602166
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f19c-7f07-b243-6b36edc467aa",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.5856456800000001
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f19a-7264-9972-56d8ea596c46",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.5852573999999999
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeba-7528-aa91-11d99a211fbf",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.5846578
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb9-739a-ae22-ac65bf47fdea",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.58326924
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eead-7dfe-80db-112e71b09962",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.54042625
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 0,
+      "degraded": [],
+      "retrievalMs": 469,
+      "error": null
+    },
+    {
+      "id": "idx-rrf",
+      "kind": "off-corpus-current-index",
+      "query": "How does reciprocal rank fusion combine the vector and lexical result lists?",
+      "expectedDocuments": [],
+      "expectAbstain": true,
+      "candidates": [
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb4-71e9-8f72-14a5be1ab28b",
+          "score": 0.01639344262295082,
+          "vectorScore": 0.5713130200000001
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60f-78ca-a543-df818f6b641f",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.56966257
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb6-75e0-931f-f3b74af20bce",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.56740564
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60e-7653-b165-8bbd12bba7fe",
+          "score": 0.015625,
+          "vectorScore": 0.5607804000000001
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60f-7d9e-abd4-5b021aaa55bf",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.55979443
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb7-77ed-8048-d7e905881ace",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.5545711
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb8-745b-a329-3ba0c4f52555",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.55413747
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb8-731a-98ed-cd609286c682",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.55389172
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb8-7c10-a438-818f1453e77f",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.5516136300000001
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f19a-7382-907b-52e2bc42252a",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.5512957
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f988-787d-95d8-22db7e51dc0a",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.550389
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb7-76f8-8840-0e83c0cff8f8",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.5501306
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 0,
+      "degraded": [],
+      "retrievalMs": 503,
+      "error": null
+    },
+    {
+      "id": "idx-chunk-size",
+      "kind": "off-corpus-current-index",
+      "query": "What is the target chunk size and overlap for document chunking?",
+      "expectedDocuments": [],
+      "expectAbstain": true,
+      "candidates": [
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f985-79ae-aa91-ea9722be0a27",
+          "score": 0.01639344262295082,
+          "vectorScore": 0.6674583000000001
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb8-7b1c-a6fe-acbbde970160",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.6339283600000001
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb6-7afa-826b-1213d91b58d5",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.63190597
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f986-7f05-9ceb-01c9af9ccc42",
+          "score": 0.015625,
+          "vectorScore": 0.6297035200000001
+        },
+        {
+          "documentName": "README.md",
+          "chunkId": "019fe670-0167-7c65-99cc-c9c8f2116c63",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.62841952
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f986-7acc-98df-d4308e9efa09",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.62639242
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb7-7f27-a12a-8652465f9662",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.6245944
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb7-76f8-8840-0e83c0cff8f8",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.62022656
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb4-71e9-8f72-14a5be1ab28b",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.6200346400000001
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb8-731a-98ed-cd609286c682",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.61825788
+        },
+        {
+          "documentName": "04-data-and-api.md",
+          "chunkId": "019fe66f-f987-7b20-8572-e530554aff58",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.61800045
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb9-7515-8a70-a96e56af2298",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.61578214
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 0,
+      "degraded": [],
+      "retrievalMs": 476,
+      "error": null
+    },
+    {
+      "id": "idx-milestones",
+      "kind": "off-corpus-current-index",
+      "query": "What are the development milestones M0 through M8?",
+      "expectedDocuments": [],
+      "expectAbstain": true,
+      "candidates": [
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb7-77ed-8048-d7e905881ace",
+          "score": 0.01639344262295082,
+          "vectorScore": 0.6148259
+        },
+        {
+          "documentName": "README.md",
+          "chunkId": "019fe670-0167-7c65-99cc-c9c8f2116c63",
+          "score": 0.016129032258064516,
+          "vectorScore": 0.6140388800000001
+        },
+        {
+          "documentName": "README.md",
+          "chunkId": "019fe670-0167-7b72-ba0b-d1e75a56bc95",
+          "score": 0.015873015873015872,
+          "vectorScore": 0.6104294
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeba-77d6-8d18-c74efbf3d715",
+          "score": 0.015625,
+          "vectorScore": 0.60427338
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eead-7dfe-80db-112e71b09962",
+          "score": 0.015384615384615385,
+          "vectorScore": 0.60381997
+        },
+        {
+          "documentName": "02-frontend.md",
+          "chunkId": "019fe66f-f1bc-7347-b7aa-fa0000ca669e",
+          "score": 0.015151515151515152,
+          "vectorScore": 0.59847945
+        },
+        {
+          "documentName": "README.md",
+          "chunkId": "019fe670-0167-7490-8191-adf166538bbb",
+          "score": 0.014925373134328358,
+          "vectorScore": 0.59643936
+        },
+        {
+          "documentName": "03-backend.md",
+          "chunkId": "019fe66f-f60f-78ca-a543-df818f6b641f",
+          "score": 0.014705882352941176,
+          "vectorScore": 0.59333092
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb7-76f8-8840-0e83c0cff8f8",
+          "score": 0.014492753623188406,
+          "vectorScore": 0.59315664
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f196-76ff-b05b-a160fcfccff6",
+          "score": 0.014285714285714285,
+          "vectorScore": 0.59251934
+        },
+        {
+          "documentName": "00-product.md",
+          "chunkId": "019fe66f-eeb8-731a-98ed-cd609286c682",
+          "score": 0.014084507042253521,
+          "vectorScore": 0.5918999300000001
+        },
+        {
+          "documentName": "01-design-system.md",
+          "chunkId": "019fe66f-f19f-75b4-87f2-0981163f7397",
+          "score": 0.013888888888888888,
+          "vectorScore": 0.5906771399999999
+        }
+      ],
+      "vectorCandidates": 20,
+      "lexicalCandidates": 0,
+      "degraded": [],
+      "retrievalMs": 468,
+      "error": null
+    }
+  ]
+}

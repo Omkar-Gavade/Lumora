@@ -25,7 +25,19 @@ export interface Document {
   errorCode: string | null;
   errorMessage: string | null;
   pageCount: number | null;
+  /** The planned total the chunker produced. A column; see the repository. */
   chunkCount: number;
+  /**
+   * Not columns. Counted from `document_chunks` on every read, because the
+   * authoritative record of "this chunk exists" and "this chunk has a vector"
+   * is the row itself and its `vector_id` — the same fields the resume path
+   * reads to decide what still needs embedding. Mirrored counters on
+   * `documents` would be a second source of truth for facts the rows already
+   * carry, and they would disagree the first time a worker died between
+   * writing vectors and updating the tally.
+   */
+  writtenChunkCount: number;
+  embeddedChunkCount: number;
   tokenCount: number | null;
   embeddingModel: string | null;
   embeddingDims: number | null;
@@ -46,6 +58,8 @@ export function toDocumentDto(document: Document): DocumentDto {
     errorMessage: document.errorMessage,
     pageCount: document.pageCount,
     chunkCount: document.chunkCount,
+    writtenChunkCount: document.writtenChunkCount,
+    embeddedChunkCount: document.embeddedChunkCount,
     createdAt: document.createdAt.toISOString(),
     processedAt: document.processedAt?.toISOString() ?? null,
   };

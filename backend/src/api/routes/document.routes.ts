@@ -2,7 +2,7 @@ import { documentIdParamSchema, listDocumentsQuerySchema } from '@lumora/shared'
 import { Router } from 'express';
 import * as documentController from '../controllers/document.controller.js';
 import { asyncHandler } from '../middleware/async-handler.js';
-import { authenticate, requireVerified } from '../middleware/authenticate.js';
+import { authenticate } from '../middleware/authenticate.js';
 import { rateLimit } from '../middleware/rate-limit.js';
 import { uploadFiles } from '../middleware/upload.js';
 import { validate } from '../middleware/validate.js';
@@ -12,10 +12,17 @@ const HOUR = 60 * 60 * 1000;
 /**
  * Document routes (docs/04-data-and-api.md §2.3).
  *
- * Every route is `authenticate` then `requireVerified`. FR-5 is explicit that
- * an unverified account keeps the shell and Settings but cannot upload or
- * chat — this is the gate's first real consumer, and the reason it was built
- * as a separate middleware rather than a flag on `authenticate`.
+ * Every route is `authenticate`, and nothing more.
+ *
+ * The email-verification gate that used to sit here was removed deliberately.
+ * It protected nothing: verification proves an address receives mail, not that
+ * a request is authorized, and every route below is already scoped to
+ * `req.actor.userId` at the repository layer — which is what actually keeps
+ * one account out of another's documents. What the gate did produce was a
+ * registration flow that ended in a dead end, where a new account reached the
+ * application shell and then could not use the product until a mail round trip
+ * completed. Abuse of an unverified account is bounded by the per-user quotas
+ * and rate limits that were already here, not by the gate.
  *
  * `GET /documents/events` (SSE) is documented in §2.3 and is not mounted here:
  * it streams status transitions, and there is no worker producing transitions
@@ -23,7 +30,7 @@ const HOUR = 60 * 60 * 1000;
  */
 export const documentRouter: Router = Router();
 
-documentRouter.use(authenticate, requireVerified);
+documentRouter.use(authenticate);
 
 /**
  * 20/hour per user (docs/04-data-and-api.md §3.4). Keyed by user rather than

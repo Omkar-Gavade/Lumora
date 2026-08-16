@@ -22,7 +22,10 @@
     "test:unit": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
     "test:auth": "vitest run --project integration tests/integration/auth-",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "reindex": "tsx scripts/reindex.ts",
+    "eval:seed": "tsx eval/seed.ts",
+    "eval": "tsx eval/run.ts"
   },
   "dependencies": {
     "@lumora/shared": "*",

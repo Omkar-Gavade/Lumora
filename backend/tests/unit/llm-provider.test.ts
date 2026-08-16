@@ -375,6 +375,141 @@ describe('GeminiProvider', () => {
     expect(response.content).toBe('one two');
   });
 
+  describe('streaming frame parsing', () => {
+    /**
+     * An SSE body delivered in caller-chosen slices.
+     *
+     * The slicing is the point: a reader that only works when each network
+     * chunk happens to contain whole frames is a reader that fails in
+     * production and passes in tests.
+     */
+    function sseResponse(body: string, sliceAt: number[] = []): void {
+      const encoder = new TextEncoder();
+      const pieces: string[] = [];
+      let start = 0;
+      for (const cut of [...sliceAt, body.length]) {
+        pieces.push(body.slice(start, cut));
+        start = cut;
+      }
+
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve(
+            new Response(
+              new ReadableStream<Uint8Array>({
+                start(controller) {
+                  for (const piece of pieces) {
+                    if (piece.length > 0) controller.enqueue(encoder.encode(piece));
+                  }
+                  controller.close();
+                },
+              }),
+            ),
+          ),
+        ),
+      );
+    }
+
+    function frame(text: string, extra = ''): string {
+      return `data: ${JSON.stringify({
+        candidates: [{ content: { parts: [{ text }] } }],
+      })}${extra}`;
+    }
+
+    async function streamText(): Promise<{ text: string; chunks: StreamChunk[] }> {
+      const chunks = await collect(
+        new GeminiProvider('gemini-x', 1_000_000, 'key').stream(
+          GROUNDED_PROMPT,
+          new AbortController().signal,
+        ),
+      );
+
+      const text = chunks
+        .filter((chunk): chunk is Extract<StreamChunk, { type: 'token' }> => chunk.type === 'token')
+        .map((chunk) => chunk.text)
+        .join('');
+
+      return { text, chunks };
+    }
+
+    it('reads a stream whose frames are separated by CRLF', async () => {
+      /*
+        This is a regression test for a silent, total failure.
+
+        Gemini's `alt=sse` endpoint terminates lines with CRLF. The reader
+        originally searched only for `\n\n`, so it found no frame boundary
+        anywhere in a perfectly valid response: every token stayed in the
+        buffer, the stream ended, and the caller received a clean `done` with
+        an empty answer and zero usage. Nothing threw, nothing logged, and the
+        product answered every question with silence.
+
+        The bug survived because OpenAI sends bare LF, so the single provider
+        the reader was written against happened to work.
+      */
+      sseResponse(`${frame('Hello ')}\r\n\r\n${frame('world.')}\r\n\r\n`);
+
+      const { text } = await streamText();
+
+      expect(text).toBe('Hello world.');
+    });
+
+    it('still reads a stream separated by bare LF', async () => {
+      sseResponse(`${frame('Hello ')}\n\n${frame('world.')}\n\n`);
+
+      const { text } = await streamText();
+
+      expect(text).toBe('Hello world.');
+    });
+
+    it('does not invent a frame boundary when CRLF straddles a chunk edge', async () => {
+      /*
+        The nastiest version of this bug: a network chunk ending between the
+        `\r` and the `\n`. Normalizing the orphaned `\r` eagerly turns one line
+        break into two, splitting an event in half — intermittently, and only
+        under a particular packet split, which is how it would reach production
+        and stay there.
+      */
+      const body = `${frame('Hello ')}\r\n\r\n${frame('world.')}\r\n\r\n`;
+      const firstSeparator = body.indexOf('\r\n\r\n');
+
+      // Cut immediately after the first `\r`, mid-separator.
+      sseResponse(body, [firstSeparator + 1]);
+
+      const { text } = await streamText();
+
+      expect(text).toBe('Hello world.');
+    });
+
+    it('emits a final frame that the server never terminated', async () => {
+      // A server may close the connection instead of writing a trailing blank
+      // line. Dropping the tail loses the last of the answer.
+      sseResponse(`${frame('Hello ')}\r\n\r\n${frame('world.')}`);
+
+      const { text } = await streamText();
+
+      expect(text).toBe('Hello world.');
+    });
+
+    it('reports the usage the final frame carries', async () => {
+      const usage = `data: ${JSON.stringify({
+        candidates: [{ content: { parts: [{ text: '!' }] }, finishReason: 'STOP' }],
+        usageMetadata: { promptTokenCount: 47, candidatesTokenCount: 17 },
+      })}`;
+
+      sseResponse(`${frame('Hi')}\r\n\r\n${usage}\r\n\r\n`);
+
+      const { chunks } = await streamText();
+      const done = chunks.at(-1);
+
+      expect(done).toMatchObject({
+        type: 'done',
+        finishReason: 'stop',
+        usage: { promptTokens: 47, completionTokens: 17 },
+      });
+    });
+  });
+
   it('normalizes MAX_TOKENS to length', async () => {
     vi.stubGlobal(
       'fetch',

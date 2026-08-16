@@ -38,9 +38,13 @@ export interface RateLimitOptions {
 /**
  * Per-route limiter factory (docs/03-backend.md §2).
  *
- * Only the auth limits from docs/04-data-and-api.md §3.4 are applied. The
- * global 300/15min ceiling is documented but not mounted — it belongs with the
- * rest of the API surface rather than with authentication.
+ * Every limit in docs/04-data-and-api.md §3.4 is applied: the per-route auth,
+ * upload, and chat limits at their routers, and the global ceiling in `app.ts`.
+ *
+ * When both apply to one request the global limiter runs first and the route
+ * limiter overwrites its `RateLimit-*` headers. That precedence is deliberate —
+ * the stricter budget is the one the client will actually hit, so it is the one
+ * worth advertising.
  */
 export function rateLimit(options: RateLimitOptions): RequestHandler {
   return (req: Request, res: Response, next: NextFunction) => {
@@ -94,6 +98,19 @@ export function resetRateLimit(name: string, key: string): Promise<void> {
  */
 export function ipKey(req: Request): string {
   return req.ip ?? 'unknown';
+}
+
+/**
+ * `ipKey`, except health probes are exempt.
+ *
+ * A load balancer polling `/health` every second spends the entire 300/15min
+ * budget in five minutes. The budget is per IP, so the casualty is not the
+ * probe — it is every real user sharing that egress address, refused by a limit
+ * they never approached. Returning `null` uses the documented skip contract
+ * rather than a second mechanism.
+ */
+export function ipKeyExceptHealth(req: Request): string | null {
+  return req.path.startsWith('/health') ? null : ipKey(req);
 }
 
 /**

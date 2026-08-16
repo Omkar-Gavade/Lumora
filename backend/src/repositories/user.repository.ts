@@ -123,6 +123,41 @@ export const userRepository = {
       .execute();
   },
 
+  /**
+   * Updates the display name (docs/00-product.md FR-34).
+   *
+   * Returns `null` when no row matched, so a caller cannot mistake "the account
+   * is gone" for a successful no-op.
+   */
+  async updateDisplayName(
+    userId: string,
+    displayName: string,
+    executor: Executor = db,
+  ): Promise<User | null> {
+    const row = await executor
+      .updateTable('users')
+      .set({ display_name: displayName })
+      .where('id', '=', userId)
+      .returningAll()
+      .executeTakeFirst();
+
+    return row ? toUser(row) : null;
+  },
+
+  /**
+   * Hard-deletes the account (FR-36: "cascades to all documents, vectors,
+   * conversations").
+   *
+   * A real DELETE rather than a soft-delete flag. A `deleted_at` column would
+   * mean every query in the system has to remember to exclude it, and the one
+   * that forgets serves a deleted user's documents. The cascade is declared on
+   * the foreign keys, so the database enforces "everything" rather than a list
+   * maintained by hand here.
+   */
+  async deleteById(userId: string, executor: Executor = db): Promise<void> {
+    await executor.deleteFrom('users').where('id', '=', userId).execute();
+  },
+
   /** Global sign-out: invalidates every outstanding access token at once. */
   async incrementTokenVersion(userId: string, executor: Executor = db): Promise<number> {
     const row = await executor
