@@ -16,7 +16,7 @@ import { safeNextPath } from './safe-next';
  * be more jarring than a blank frame.
  */
 export function PublicOnlyRoute() {
-  const { status, user } = useAuth();
+  const { status } = useAuth();
   const [searchParams] = useSearchParams();
 
   if (status === 'loading') return null;

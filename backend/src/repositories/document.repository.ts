@@ -68,10 +68,10 @@ function toDocument(row: DocumentRow): Document {
     errorMessage: row.error_message,
     pageCount: row.page_count,
     chunkCount: row.chunk_count,
-    // `count(*)` is a bigint; the INT8 parser installed in `db/pool.ts` hands
-    // it over as a number, and `Number` covers the case where it does not.
-    writtenChunkCount: Number(row.written_chunk_count),
-    embeddedChunkCount: Number(row.embedded_chunk_count),
+    // `count(*)` is a bigint, which `pg` hands over as a string by default.
+    // The INT8 parser installed in `db/pool.ts` is what makes these numbers.
+    writtenChunkCount: row.written_chunk_count,
+    embeddedChunkCount: row.embedded_chunk_count,
     tokenCount: row.token_count,
     embeddingModel: row.embedding_model,
     embeddingDims: row.embedding_dims,
