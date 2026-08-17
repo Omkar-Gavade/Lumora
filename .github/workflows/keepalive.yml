@@ -1,0 +1,65 @@
+# Keeps the free-tier stack awake.
+#
+# Two independent inactivity timers make an idle Lumora stop working:
+#
+#   Supabase  pauses a free project after 7 days with no requests, and
+#             resuming it is a manual dashboard action.
+#   Koyeb     scales a free instance to zero after 1 hour without traffic.
+#             That one is self-healing — the next request wakes it — so it is
+#             not what this workflow is for.
+#
+# Only the Supabase pause is actually damaging, because it needs a human. One
+# request every three days is enough to reset a seven-day timer with room to
+# spare for a missed run.
+#
+# This is deliberately the smallest thing that works: a single GET to a public
+# health endpoint. It is not load generation, it does not authenticate, and it
+# does not touch user data.
+#
+# **Provider policies change.** Supabase's pause window and Koyeb's scale-down
+# are current as of writing and are not contractual. If either changes, this
+# schedule is the thing to revisit — see docs/11 §Free-tier limits.
+
+name: Keepalive
+
+on:
+  schedule:
+    # 07:00 UTC every third day. Not hourly: the goal is to reset a 7-day
+    # timer, and anything more frequent is traffic nobody asked for.
+    - cron: '0 7 */3 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping the API readiness endpoint
+        env:
+          # Repository variable, not a secret — it is a public URL. Unset until
+          # the backend is deployed, and the step skips rather than failing.
+          API_URL: ${{ vars.PRODUCTION_API_URL }}
+        run: |
+          if [ -z "$API_URL" ]; then
+            echo "PRODUCTION_API_URL is not set — nothing deployed yet, skipping."
+            exit 0
+          fi
+
+          # `/health/ready` rather than `/health`: readiness touches the
+          # database, which is the thing whose inactivity timer matters. A
+          # liveness probe would keep Koyeb awake while Supabase still paused.
+          code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 "$API_URL/health/ready" || echo 000)
+          echo "GET $API_URL/health/ready -> $code"
+
+          # A cold start can exceed the timeout on the first hit. One retry
+          # distinguishes "asleep" from "broken".
+          if [ "$code" != "200" ]; then
+            sleep 30
+            code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 60 "$API_URL/health/ready" || echo 000)
+            echo "retry -> $code"
+          fi
+
+          [ "$code" = "200" ]

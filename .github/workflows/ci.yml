@@ -1,0 +1,177 @@
+# Continuous integration (docs/09 §3).
+#
+# **This pipeline needs no production secret.** The test setup forces
+# `EMBEDDING_PROVIDER=fake`, `VECTOR_STORE=fake`, and `LLM_PROVIDER=fake`, and
+# the suites that talk to a real Chroma or a real S3 skip themselves when those
+# are unreachable. So CI needs Postgres and nothing else — no Gemini key, no
+# AWS credentials, nothing that would be worth stealing from a fork.
+#
+# Four jobs run in parallel; `docker` and `security` wait for `build` because
+# there is no point scanning an image whose source does not compile.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A second push to the same branch cancels the first. CI on a commit nobody
+# will merge is just queue time.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          # The ROOT lockfile. There is a second, vestigial one in `frontend/`,
+          # and keying the cache on it restores a tree that does not match what
+          # `npm ci` installs.
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      # `shared` is a build dependency of both other workspaces' lint configs.
+      - run: npm run build --workspace @lumora/shared
+      - run: npm run lint --workspace @lumora/backend
+      - run: npm run lint --workspace @lumora/frontend
+
+  test-backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        # pgvector's image, not stock postgres: `PgVectorStore` is the
+        # production vector store and its suite creates `EXTENSION vector`.
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: lumora
+          POSTGRES_PASSWORD: lumora
+          POSTGRES_DB: lumora
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U lumora -d lumora"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      # Must end in `_test`; the suite refuses to run otherwise, which is what
+      # stops it truncating a real database. `global-setup.ts` creates it and
+      # applies migrations itself.
+      TEST_DATABASE_URL: postgresql://lumora:lumora@localhost:5432/lumora_test
+      TEST_JWT_ACCESS_SECRET: ci-only-secret-value-that-is-long-enough-000000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: npm run build --workspace @lumora/shared
+      - run: npm run typecheck --workspace @lumora/backend
+      # Chroma and MinIO are deliberately absent — those suites skip, and the
+      # pgvector and Postgres ones are the production paths anyway.
+      - run: npm run test --workspace @lumora/backend
+
+  test-frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: npm run build --workspace @lumora/shared
+      - run: npm run typecheck --workspace @lumora/frontend
+      - run: npm run test --workspace @lumora/frontend
+
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: npm run build --workspace @lumora/shared
+      - run: npm run build --workspace @lumora/backend
+      - run: npm run build --workspace @lumora/frontend
+        env:
+          # Build-time and public by definition — anything in a VITE_ variable
+          # is compiled into a bundle any visitor can read. Never a secret.
+          VITE_API_URL: https://api.example.invalid
+
+      - name: Fail if a secret reached the frontend bundle
+        run: |
+          # A cheap, high-value check: the bundle is world-readable, so a key
+          # that lands in it is disclosed the moment the site is deployed.
+          if grep -rIqE 'AIza[0-9A-Za-z_-]{30}|BEGIN [A-Z ]*PRIVATE KEY|postgres(ql)?://[^ "]*:[^ "]*@' frontend/dist; then
+            echo "::error::a credential-shaped string is present in the frontend bundle"
+            exit 1
+          fi
+          echo "no credential patterns in frontend/dist"
+
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build the backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          # Validation only. Pushing to a registry belongs to the deployment
+          # workflow, which runs on `main` behind an approval (docs/09 §13).
+          push: false
+          load: true
+          tags: lumora-backend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Fail if the image contains a .env
+        run: |
+          # `.dockerignore` excludes them, and an image layer is readable by
+          # anyone who can pull it — so this asserts the exclusion held.
+          if docker run --rm --entrypoint sh lumora-backend:${{ github.sha }} \
+               -c 'ls /app/.env /app/backend/.env 2>/dev/null' | grep -q .; then
+            echo "::error::the image contains a .env file"
+            exit 1
+          fi
+          echo "no .env in image"
+
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [docker]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+
+      - name: Audit production dependencies
+        # `--omit=dev`: a vulnerability in a test runner is not shipped, and
+        # failing the build on one trains people to ignore the job.
+        run: npm audit --omit=dev --audit-level=high

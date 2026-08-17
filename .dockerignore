@@ -1,0 +1,54 @@
+# Without this the build context ships the host's `node_modules` — hundreds of
+# megabytes, built for the host's platform, and slower to transfer than the
+# image is to build.
+node_modules
+**/node_modules
+
+# Build output is produced inside the image. Copying the host's would ship
+# whatever was last built locally, which is not necessarily this commit.
+dist
+**/dist
+# Both forms. `*.tsbuildinfo` alone matches only the root, so
+# `shared/tsconfig.tsbuildinfo` would be copied in while `dist` is excluded —
+# `tsc -b` then reads a build-info describing output that is not there,
+# concludes everything is current, and emits nothing. The backend build fails
+# afterwards with "Cannot find module '@lumora/shared'", a long way from the
+# cause.
+*.tsbuildinfo
+**/*.tsbuildinfo
+
+# Secrets must never enter a build context. An image layer is readable by
+# anyone who can pull it, and `docker history` survives a later `rm`.
+.env
+.env.*
+!.env.example
+!**/.env.example
+**/.env
+!**/.env.*.example
+
+# User documents. Present on a developer machine, never part of an image.
+uploads
+**/uploads
+
+.git
+.github
+.claude
+coverage
+docs
+*.md
+!package.json
+
+# The frontend is a static bundle served by a CDN (docs/08 §7), not part of the
+# backend image. Its source only slows the build context down — but its
+# manifest has to stay: `npm ci` reconciles every workspace in the lockfile and
+# fails on a member whose package.json is missing.
+frontend
+!frontend/package.json
+
+# Test fixtures and local tooling.
+**/*.test.ts
+**/*.test.tsx
+backend/tests
+frontend/tests
+.DS_Store
+*.log

@@ -1,0 +1,14 @@
+# Hashed assets are immutable — Vite puts a content hash in every filename, so
+# a changed file is a different URL and this can never serve stale code.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# The entry point must not be cached, or a deploy is invisible until the
+# browser decides otherwise.
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY

@@ -1,0 +1,9 @@
+# SPA fallback for Cloudflare Pages.
+#
+# Lumora is a client-routed SPA: /app/chat/<id> exists only in the browser's
+# router, so a direct visit or a refresh on that URL asks the CDN for a file
+# that was never built. Without this the user gets a 404 on every deep link
+# and on every page reload — the two things people do most with a chat URL.
+#
+# 200, not 301: the browser keeps the original path so the router can read it.
+/*    /index.html   200
