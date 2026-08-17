@@ -77,6 +77,21 @@ included — cannot reach them. `sslmode=require` is not optional: the pool
 passes the URL straight to `pg`, so **TLS is configured by the URL, not by
 code**.
 
+### Verify the configuration before anything else
+
+```bash
+npm run verify:supabase --workspace @lumora/backend
+```
+
+Sixteen checks in the order that makes a failure diagnosable: variables
+present → pooler vs direct → TLS → connection → `vector` extension →
+migrations → tables → HNSW index → a real vector insert and similarity search
+→ storage put/get/exists/delete → traversal rejection. It prints hostnames and
+counts, never a secret.
+
+Run it before deploying anything. A wrong connection string fails here in two
+seconds rather than as a Koyeb container that will not start.
+
 ### Migrations
 
 ```bash
