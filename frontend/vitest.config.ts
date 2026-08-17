@@ -12,6 +12,21 @@ import { defineConfig } from 'vitest/config';
  * verified by calling a function.
  */
 export default defineConfig({
+  /*
+    `src/app/config/env.ts` validates `VITE_API_URL` at module load and throws
+    when it is absent — deliberately, so a misconfigured deployment fails
+    loudly rather than serving an app that cannot reach its API. Every test
+    that touches the API client imports it transitively.
+
+    A developer has `frontend/.env`; CI does not, so the whole suite died on a
+    configuration error rather than on anything it was testing. Defined here so
+    `npm test` is self-sufficient wherever it runs.
+  */
+  define: {
+    'import.meta.env.VITE_API_URL': JSON.stringify(
+      process.env.VITE_API_URL ?? 'http://localhost:4000',
+    ),
+  },
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
   },

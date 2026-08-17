@@ -4,6 +4,16 @@ import { GeminiProvider } from '../../src/providers/llm/gemini.provider.js';
 import { OpenAiProvider } from '../../src/providers/llm/openai.provider.js';
 import type { CompletionRequest, StreamChunk } from '../../src/providers/llm/llm-provider.interface.js';
 
+/**
+ * A Gemini provider whose retry backoff is a millisecond.
+ *
+ * The retry policy is worth asserting; waiting several seconds of real time
+ * for it is not, and doing so put this file's 503 case over its timeout on CI.
+ */
+const FAST_GEMINI = () =>
+  new GeminiProvider('gemini-x', 1_000_000, 'key', undefined, undefined, 1);
+
+
 const GROUNDED_PROMPT: CompletionRequest = {
   messages: [
     {
@@ -28,6 +38,7 @@ describe('FakeLLMProvider', () => {
       untestable — which is most of what this milestone does.
     */
     const provider = new FakeLLMProvider();
+
 
     return provider.complete(GROUNDED_PROMPT).then((response) => {
       expect(response.content).toContain('[1]');
@@ -324,7 +335,7 @@ describe('GeminiProvider', () => {
     */
     const captured = captureBody(OK);
 
-    await new GeminiProvider('gemini-x', 1_000_000, 'key').complete(GROUNDED_PROMPT);
+    await FAST_GEMINI().complete(GROUNDED_PROMPT);
 
     const body = JSON.parse(captured.read()) as {
       systemInstruction?: { parts: { text: string }[] };
@@ -555,7 +566,7 @@ describe('GeminiProvider', () => {
     vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(new Response('busy', { status: 503 }))));
 
     await expect(
-      new GeminiProvider('gemini-x', 1_000_000, 'key').complete(GROUNDED_PROMPT),
+      FAST_GEMINI().complete(GROUNDED_PROMPT),
     ).rejects.toMatchObject({ retryable: true, status: 503 });
   });
 
@@ -563,7 +574,7 @@ describe('GeminiProvider', () => {
     vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new Error('ECONNRESET'))));
 
     await expect(
-      new GeminiProvider('gemini-x', 1_000_000, 'key').complete(GROUNDED_PROMPT),
+      FAST_GEMINI().complete(GROUNDED_PROMPT),
     ).rejects.toMatchObject({ retryable: true });
   });
 });
@@ -639,7 +650,7 @@ describe('GeminiProvider — transient failure retry', () => {
 
     try {
       await expect(
-        new GeminiProvider('gemini-x', 1_000_000, 'key').complete(GROUNDED_PROMPT),
+        FAST_GEMINI().complete(GROUNDED_PROMPT),
       ).rejects.toThrow();
       // Retrying a malformed prompt spends the user's time reaching the same
       // answer four times.
@@ -659,7 +670,7 @@ describe('GeminiProvider — transient failure retry', () => {
 
     try {
       await expect(
-        new GeminiProvider('gemini-x', 1_000_000, 'key').complete(GROUNDED_PROMPT),
+        FAST_GEMINI().complete(GROUNDED_PROMPT),
       ).rejects.toThrow();
       // Four attempts total. A real outage must fail in seconds rather than
       // holding an SSE connection open while the user waits.

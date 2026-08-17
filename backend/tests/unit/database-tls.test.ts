@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process';
+import { X509Certificate } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
@@ -119,33 +120,35 @@ describe('pinned certificate', () => {
     expect(pem).not.toContain('PRIVATE KEY');
   });
 
-  it('**is the Supabase root that was verified against the live server**', async () => {
+  /*
+    Parsed with Node's own X509 rather than by shelling out to `openssl`.
+
+    The binary is absent from slim container images — `node:22-slim` has no
+    openssl — so a test that spawns it asserts something about the host rather
+    than about the certificate, and fails with `spawn openssl ENOENT` wherever
+    the image is minimal.
+  */
+  const certificate = new X509Certificate(readFileSync(path));
+
+  it('**is the Supabase root that was verified against the live server**', () => {
     /*
       Pinned by fingerprint. Checking a CA against the server that presents it
       is circular — this records the value confirmed out of band, from
       Supabase's own HTTPS distribution, so a substituted file fails here
       rather than silently widening what the database will trust.
     */
-    const { stdout } = await run('openssl', [
-      'x509',
-      '-in',
-      path,
-      '-noout',
-      '-fingerprint',
-      '-sha256',
-    ]);
-
-    // openssl prints `sha256Fingerprint=80:70:…`; strip separators, not just
-    // whitespace.
-    expect(stdout.replace(/[\s:]/g, '')).toContain(
+    expect(certificate.fingerprint256.replace(/:/g, '')).toBe(
       '807025AD50D4ED219D2C9C7D299C004F824EB00CF7F65AFEF607D07B72E6CAFA',
     );
   });
 
-  it('has not expired', async () => {
-    const { stdout } = await run('openssl', ['x509', '-in', path, '-noout', '-enddate']);
-    const notAfter = new Date(stdout.replace('notAfter=', '').trim());
+  it('is the Supabase root, and is self-signed as a root should be', () => {
+    expect(certificate.subject).toContain('Supabase Root 2021 CA');
+    expect(certificate.issuer).toBe(certificate.subject);
+    expect(certificate.ca).toBe(true);
+  });
 
-    expect(notAfter.getTime()).toBeGreaterThan(Date.now());
+  it('has not expired', () => {
+    expect(new Date(certificate.validTo).getTime()).toBeGreaterThan(Date.now());
   });
 });

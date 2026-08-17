@@ -142,6 +142,19 @@ export function loadTestEnv(): void {
     breach check in particular would make signup tests depend on a third
     party's uptime.
   */
+/*
+  Supplied here rather than left to `backend/.env`, because `global-setup`
+  runs migrations in a *child process* that inherits only what is set on
+  `process.env`. On a developer machine the file fills these in and the gap is
+  invisible; in CI there is no `.env`, the child refuses to start, and the
+  whole suite fails with "CORS_ORIGINS: expected string, received undefined" —
+  a configuration error wearing the costume of a test failure.
+
+  Values are deliberately inert: nothing in the suite sends mail or serves a
+  browser request, so these only have to satisfy the schema.
+*/
+process.env.APP_URL ??= 'http://localhost:5173';
+process.env.CORS_ORIGINS ??= 'http://localhost:5173';
   process.env.NODE_ENV = 'test';
   process.env.MAIL_DRIVER ??= 'console';
   process.env.PASSWORD_BREACH_CHECK = 'false';

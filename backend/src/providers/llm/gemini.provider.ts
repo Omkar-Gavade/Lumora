@@ -47,6 +47,16 @@ export class GeminiProvider implements LLMProvider {
     private readonly apiKey: string,
     private readonly baseUrl = 'https://generativelanguage.googleapis.com/v1beta',
     private readonly timeoutMs = 120_000,
+    /**
+     * Base retry delay, doubled per attempt and jittered.
+     *
+     * A constructor argument rather than a module constant so tests can assert
+     * the retry policy without waiting on it: four attempts at 400ms is three
+     * to seven seconds of wall clock, which pushed an existing 503 test past
+     * its five-second timeout on CI while passing locally — a retry policy
+     * quietly becoming a flaky test.
+     */
+    private readonly retryBaseMs = BASE_BACKOFF_MS,
   ) {}
 
   async complete(request: CompletionRequest): Promise<CompletionResponse> {
@@ -192,7 +202,7 @@ export class GeminiProvider implements LLMProvider {
           several concurrent turns failing on the same quota window would
           otherwise retry in lockstep and refill it together.
         */
-        const backoff = BASE_BACKOFF_MS * 2 ** attempt;
+        const backoff = this.retryBaseMs * 2 ** attempt;
         const delay = backoff + Math.floor(Math.random() * backoff);
 
         await sleep(delay, signal);
@@ -247,6 +257,8 @@ export class GeminiProvider implements LLMProvider {
  * holding an SSE connection open while the user waits.
  */
 const MAX_RETRIES = 3;
+
+/** Default base delay. Overridable per instance — see the constructor. */
 const BASE_BACKOFF_MS = 400;
 
 /** A delay that gives up immediately when the turn is aborted. */
