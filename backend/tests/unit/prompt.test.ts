@@ -12,7 +12,7 @@ import {
   SYSTEM_PROMPT,
 } from '../../src/services/chat/system-prompt.js';
 import { mapCitations, isUncited } from '../../src/services/chat/citation.mapper.js';
-import { cleanTitle } from '../../src/services/chat/chat.service.js';
+import { cleanTitle, fallbackTitle } from '../../src/services/chat/chat.service.js';
 
 const provider = new FakeLLMProvider();
 
@@ -473,5 +473,67 @@ describe('cleanTitle', () => {
 
   it('returns empty for an empty reply, so nothing is saved', () => {
     expect(cleanTitle('   ')).toBe('');
+  });
+});
+
+describe('fallbackTitle', () => {
+  /*
+    The name a conversation gets when the model cannot supply one.
+
+    This exists because the sidebar is navigation now: a provider outage that
+    leaves every row reading "New conversation" does not degrade the feature,
+    it removes it.
+  */
+
+  it('starts the title at the subject, not at the politeness', () => {
+    expect(fallbackTitle('Can you explain how the hybrid retrieval pipeline works?')).toBe(
+      'Hybrid retrieval pipeline works',
+    );
+  });
+
+  it('drops a leading article once the filler in front of it is gone', () => {
+    expect(fallbackTitle('Explain the retrieval pipeline in Lumora')).toBe(
+      'Retrieval pipeline in Lumora',
+    );
+  });
+
+  it('consumes the longest matching opener, not the shortest', () => {
+    // "can you" alone would leave "explain" stranded at the head of the title.
+    expect(fallbackTitle('Can you explain Kubernetes ingress')).toBe('Kubernetes ingress');
+  });
+
+  it('strips the question mark a question actually ends on', () => {
+    expect(fallbackTitle('How does Kubernetes ingress work?')).toBe(
+      'How does Kubernetes ingress work',
+    );
+  });
+
+  it('leaves identifiers alone instead of title-casing them', () => {
+    // "Pg_Isready Timeout" is not searchable; "pg_isready timeout" is.
+    expect(fallbackTitle('help me debug pg_isready timeout')).toBe('Pg_isready timeout');
+  });
+
+  it('obeys the same six-word cap as a generated title', () => {
+    const title = fallbackTitle('one two three four five six seven eight nine ten');
+
+    expect(title.split(' ').length).toBeLessThanOrEqual(6);
+  });
+
+  it('never exceeds the sidebar character cap', () => {
+    const title = fallbackTitle(
+      'Supercalifragilistic extraordinarily verbose questioning about wording here',
+    );
+
+    expect(title.length).toBeLessThanOrEqual(60);
+  });
+
+  it('keeps the original question when it is nothing but filler', () => {
+    // Better a weak label than an empty one — an empty title would fall
+    // through and leave the placeholder.
+    expect(fallbackTitle('please')).toBe('Please');
+  });
+
+  it('returns empty for an empty question, so nothing is saved', () => {
+    expect(fallbackTitle('   ')).toBe('');
   });
 });

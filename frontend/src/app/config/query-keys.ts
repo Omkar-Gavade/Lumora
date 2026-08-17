@@ -23,4 +23,16 @@ export const queryKeys = {
     detail: (id: string) => ['documents', 'detail', id] as const,
     usage: () => ['documents', 'usage'] as const,
   },
+  /*
+    Hierarchical like the rest, so a membership change can invalidate one
+    base's documents without sweeping every base's list — and so `all()` still
+    catches everything when a base is created or deleted.
+  */
+  knowledgeBases: {
+    all: () => ['knowledge-bases'] as const,
+    list: () => ['knowledge-bases', 'list'] as const,
+    detail: (id: string) => ['knowledge-bases', 'detail', id] as const,
+    documents: (id: string) => ['knowledge-bases', 'detail', id, 'documents'] as const,
+    impact: (id: string) => ['knowledge-bases', 'detail', id, 'impact'] as const,
+  },
 } as const;

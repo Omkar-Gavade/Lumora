@@ -25,6 +25,7 @@ export const ROUTES = {
 /** Path builders for routes that take a parameter. */
 export const buildRoute = {
   conversation: (id: string) => `${ROUTES.chat}/${id}`,
+  knowledgeBase: (id: string) => `${ROUTES.knowledge}/${id}`,
 } as const;
 
 /** Homepage section anchors, used by both the nav and the sections themselves. */

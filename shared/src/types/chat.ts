@@ -52,6 +52,11 @@ export interface ConversationDto {
   messageCount: number;
   lastMessageAt: string | null;
   archived: boolean;
+  /**
+   * The Knowledge Base this conversation retrieves from, or `null` for the
+   * user's whole corpus (docs/07 §5). Frozen once `messageCount > 0`.
+   */
+  knowledgeBaseId: string | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -1,7 +1,7 @@
 import { env } from '../../config/index.js';
 import type { EmbeddingProvider } from '../../providers/embedding/embedding-provider.interface.js';
 import { collectionFor } from '../../providers/vector/vector-store.interface.js';
-import type { VectorStore } from '../../providers/vector/vector-store.interface.js';
+import type { MetadataFilter, VectorStore } from '../../providers/vector/vector-store.interface.js';
 import { estimateTokens } from '../documents/parsing/normalize.js';
 import {
   dedupeByChunkId,
@@ -46,34 +46,38 @@ export class VectorRetriever implements Retriever {
     */
     const embedding = await this.embeddings.embedQuery(query.text);
 
+    const filter = documentFilter(query.documentIds);
+
     /*
-      Document filtering is pushed into the store rather than applied after.
+      An empty scope short-circuits, and does not reach the store.
 
-      Filtering `k=20` results down to the two that came from the requested
-      document would return two chunks where the caller asked for twenty — the
-      filter has to be part of the search, not a post-condition on it.
-
-      A single-document filter goes through the store's metadata filter. A
-      multi-document one is applied here, because the `MetadataFilter` contract
-      is equality-only and inventing an `$in` operator would change a
-      documented interface for one call site.
+      This is the correction docs/07-knowledge-base.md §6.3 (D-1) requires. The
+      lexical half has always read an empty list as "no documents"; this half
+      read it as "no filter" and returned the user's entire corpus. A
+      conversation scoped to an empty Knowledge Base would therefore have been
+      answered from documents it was never scoped to — not a cross-tenant leak,
+      since the collection is still per-user, but a scope the user did not
+      choose, presented as though they had.
     */
-    const singleDocument =
-      query.documentIds?.length === 1 ? query.documentIds[0] : undefined;
+    if (filter === EMPTY_SCOPE) return [];
 
     const matches = await this.store.query(
       collectionFor(query.userId, this.collectionPrefix),
       embedding,
-      // Over-fetch when filtering client-side, so a multi-document filter does
-      // not silently return fewer than `topK` results that exist.
-      this.needsClientFilter(query) ? query.topK * OVERFETCH_FACTOR : query.topK,
-      singleDocument === undefined ? undefined : { documentId: singleDocument },
+      /*
+        `topK`, not `topK × 4`.
+
+        The filter is now applied inside the search for every case — one
+        document by equality, many by `$in` — so the store returns `topK`
+        matching neighbours rather than `topK` neighbours of which some match.
+        The over-fetch existed only to compensate for filtering afterwards, and
+        it never guaranteed enough survivors.
+      */
+      query.topK,
+      filter,
     );
 
-    const wanted = new Set(query.documentIds ?? []);
-
     const chunks: RetrievedChunk[] = matches
-      .filter((match) => wanted.size === 0 || wanted.has(match.metadata.documentId))
       .map((match) => ({
         chunkId: match.metadata.chunkId,
         documentId: match.metadata.documentId,
@@ -91,20 +95,37 @@ export class VectorRetriever implements Retriever {
 
     return rankDeterministically(dedupeByChunkId(chunks)).slice(0, query.topK);
   }
-
-  /** True when the filter cannot be expressed as a single equality. */
-  private needsClientFilter(query: RetrievalQuery): boolean {
-    return (query.documentIds?.length ?? 0) > 1;
-  }
 }
 
 /**
- * How much to over-fetch when a filter is applied after the search.
+ * Sentinel for "scoped to nothing", which is distinct from "not scoped".
  *
- * Four is a compromise, and an honest one: there is no value that guarantees
- * `topK` survivors, because the store cannot say how the filtered documents
- * are distributed through the ranking. Four covers the realistic case — a
- * filter over a handful of documents in a corpus of dozens — without asking a
- * vector index for eighty neighbours to return six.
+ * A separate value rather than `null`, because the three states this function
+ * returns are genuinely three — no filter, an impossible filter, and a real
+ * filter — and collapsing the first two is exactly the bug being fixed.
  */
-const OVERFETCH_FACTOR = 4;
+const EMPTY_SCOPE = Symbol('empty-scope');
+
+/**
+ * The store filter for a document scope.
+ *
+ *   `undefined`   → no filter; the user's whole corpus (unchanged behaviour)
+ *   `[]`          → EMPTY_SCOPE; nothing can match
+ *   `[one]`       → equality
+ *   `[many]`      → `$in`, evaluated inside the store
+ *
+ * The distinction between the first two is load-bearing and easy to destroy by
+ * defaulting one into the other, which is why it is resolved here once instead
+ * of at each call site.
+ */
+function documentFilter(
+  documentIds: string[] | undefined,
+): MetadataFilter | undefined | typeof EMPTY_SCOPE {
+  if (documentIds === undefined) return undefined;
+  if (documentIds.length === 0) return EMPTY_SCOPE;
+
+  const [only] = documentIds;
+  if (documentIds.length === 1 && only !== undefined) return { documentId: only };
+
+  return { documentId: { $in: documentIds } };
+}

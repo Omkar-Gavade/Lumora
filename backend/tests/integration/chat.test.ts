@@ -678,4 +678,129 @@ describe('titling', () => {
 
     spy.mockRestore();
   });
+
+  it('names the conversation from the question when the model is unreachable', async () => {
+    /*
+      A 503 from the provider must not leave a permanent "New conversation".
+
+      The sidebar is navigation (docs/00-product.md FR-21), and a list whose
+      every row carries the same placeholder is not navigation — so the
+      deterministic path is a requirement of the feature, not a nicety.
+    */
+    const user = await createVerifiedUser();
+    const conversation = await newConversation(user);
+
+    const spy = vi
+      .spyOn(llmProvider, 'complete')
+      .mockRejectedValue(new Error('503 Service Unavailable'));
+
+    await chatService.maybeTitle(
+      conversation.id,
+      user.id,
+      'Can you explain how the hybrid retrieval pipeline works?',
+    );
+
+    const row = await db
+      .selectFrom('conversations')
+      .select(['title', 'title_generated'])
+      .where('id', '=', conversation.id)
+      .executeTakeFirstOrThrow();
+
+    expect(row.title).toBe('Hybrid retrieval pipeline works');
+    // Marked generated, so the next turn does not re-attempt and overwrite a
+    // title the user may by then have edited.
+    expect(row.title_generated).toBe(true);
+
+    spy.mockRestore();
+  });
+
+  it('falls back when the model answers with nothing', async () => {
+    // An empty completion is a failed completion — the old code returned early
+    // and left the placeholder in place.
+    const user = await createVerifiedUser();
+    const conversation = await newConversation(user);
+
+    const spy = vi.spyOn(llmProvider, 'complete').mockResolvedValue({
+      content: '   ',
+      usage: { promptTokens: 1, completionTokens: 0 },
+      finishReason: 'stop',
+    });
+
+    await chatService.maybeTitle(conversation.id, user.id, 'What is the notice period?');
+
+    const row = await db
+      .selectFrom('conversations')
+      .select('title')
+      .where('id', '=', conversation.id)
+      .executeTakeFirstOrThrow();
+
+    expect(row.title).not.toBe('New conversation');
+
+    spy.mockRestore();
+  });
+
+  it('names an abstained conversation without calling the model', async () => {
+    /*
+      An abstention answers without a completion (chat.stream §7). Titling it
+      through the model would undo that saving for a cosmetic gain, and a new
+      account's threads are mostly abstentions — so they are exactly the rows
+      that must not all read "New conversation" in the sidebar.
+    */
+    const user = await createVerifiedUser();
+    const conversation = await newConversation(user);
+
+    const spy = vi.spyOn(llmProvider, 'complete');
+
+    await chatService.maybeTitle(
+      conversation.id,
+      user.id,
+      'Explain how the hybrid retrieval pipeline works in Lumora',
+      { useModel: false },
+    );
+
+    expect(spy).not.toHaveBeenCalled();
+
+    const row = await db
+      .selectFrom('conversations')
+      .select(['title', 'title_generated'])
+      .where('id', '=', conversation.id)
+      .executeTakeFirstOrThrow();
+
+    expect(row.title).toBe('Hybrid retrieval pipeline works in Lumora');
+    expect(row.title_generated).toBe(true);
+
+    spy.mockRestore();
+  });
+
+  it('does not re-title a conversation a failed attempt already named', async () => {
+    /*
+      The guard is `title_generated = false` in SQL, so the fallback closes the
+      retry loop the same way a real title does. Without that, every subsequent
+      turn would call the model again for a conversation that already has a
+      perfectly serviceable name.
+    */
+    const user = await createVerifiedUser();
+    const conversation = await newConversation(user);
+
+    const failing = vi
+      .spyOn(llmProvider, 'complete')
+      .mockRejectedValue(new Error('503 Service Unavailable'));
+    await chatService.maybeTitle(conversation.id, user.id, 'Explain Kubernetes ingress');
+    failing.mockRestore();
+
+    const second = vi.spyOn(llmProvider, 'complete');
+    await chatService.maybeTitle(conversation.id, user.id, 'A completely different question');
+
+    expect(second).not.toHaveBeenCalled();
+
+    const row = await db
+      .selectFrom('conversations')
+      .select('title')
+      .where('id', '=', conversation.id)
+      .executeTakeFirstOrThrow();
+
+    expect(row.title).toBe('Kubernetes ingress');
+
+    second.mockRestore();
+  });
 });

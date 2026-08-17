@@ -62,6 +62,11 @@ const ChatPage = lazy(() => import('@/pages/app/ChatPage').then((m) => ({ defaul
 const KnowledgeBasePage = lazy(() =>
   import('@/pages/app/KnowledgeBasePage').then((m) => ({ default: m.KnowledgeBasePage })),
 );
+const KnowledgeBaseDetailPage = lazy(() =>
+  import('@/pages/app/KnowledgeBaseDetailPage').then((m) => ({
+    default: m.KnowledgeBaseDetailPage,
+  })),
+);
 const DocumentsPage = lazy(() =>
   import('@/pages/app/DocumentsPage').then((m) => ({ default: m.DocumentsPage })),
 );
@@ -166,6 +171,10 @@ export function App() {
                   <Route path="chat" element={<ChatPage />} />
                   <Route path="chat/:conversationId" element={<ChatPage />} />
                   <Route path="knowledge" element={<KnowledgeBasePage />} />
+                  <Route
+                    path="knowledge/:knowledgeBaseId"
+                    element={<KnowledgeBaseDetailPage />}
+                  />
                   <Route path="documents" element={<DocumentsPage />} />
                   <Route path="search" element={<SearchPage />} />
                   <Route path="settings" element={<SettingsPage />} />

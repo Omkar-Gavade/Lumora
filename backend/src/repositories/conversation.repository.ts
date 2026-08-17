@@ -13,6 +13,8 @@ export interface Conversation {
   messageCount: number;
   lastMessageAt: Date | null;
   archivedAt: Date | null;
+  /** Retrieval scope (docs/07 §5). `null` is unscoped — the whole corpus. */
+  knowledgeBaseId: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,6 +30,7 @@ function toConversation(row: Selectable<ConversationsTable>): Conversation {
     messageCount: row.message_count,
     lastMessageAt: row.last_message_at,
     archivedAt: row.archived_at,
+    knowledgeBaseId: row.knowledge_base_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -63,12 +66,19 @@ export const conversationRepository = {
    * conversation the user had just named — the same bug the guard on
    * `setGeneratedTitle` exists to prevent, arriving through the other door.
    */
-  async create(userId: string, title: string | undefined, executor: Executor = db): Promise<Conversation> {
+  async create(
+    userId: string,
+    title: string | undefined,
+    knowledgeBaseId: string | null | undefined,
+    executor: Executor = db,
+  ): Promise<Conversation> {
     const row = await executor
       .insertInto('conversations')
       .values({
         user_id: userId,
         ...(title === undefined ? {} : { title, title_generated: true }),
+        // Undefined and null both mean unscoped; the column defaults to null.
+        ...(knowledgeBaseId == null ? {} : { knowledge_base_id: knowledgeBaseId }),
       })
       .returningAll()
       .executeTakeFirstOrThrow();
@@ -161,6 +171,37 @@ export const conversationRepository = {
       })
       .where('id', '=', id)
       .where('user_id', '=', userId)
+      .returningAll()
+      .executeTakeFirst();
+
+    return row ? toConversation(row) : null;
+  },
+
+  /**
+   * Sets the retrieval scope, but only while the thread has no messages.
+   *
+   * **The freeze is `message_count = 0` in the `WHERE` clause** (docs/07 §2.2),
+   * not a read followed by a write. A turn in flight increments the count in
+   * SQL, so a scope change racing the first message must lose — and a
+   * read-then-write lets it win, leaving a transcript whose citations were
+   * retrieved under a scope the row no longer claims.
+   *
+   * Returns `null` when the conversation is not the caller's *or* already has
+   * messages. The service distinguishes the two with a follow-up read, because
+   * only one of them is a conflict and the other is a 404.
+   */
+  async setKnowledgeBase(
+    id: string,
+    userId: string,
+    knowledgeBaseId: string | null,
+    executor: Executor = db,
+  ): Promise<Conversation | null> {
+    const row = await executor
+      .updateTable('conversations')
+      .set({ knowledge_base_id: knowledgeBaseId })
+      .where('id', '=', id)
+      .where('user_id', '=', userId)
+      .where('message_count', '=', 0)
       .returningAll()
       .executeTakeFirst();
 

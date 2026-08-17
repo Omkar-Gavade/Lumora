@@ -3,6 +3,7 @@ import { env } from '../../config/index.js';
 import { NotFoundError, ProviderError as UpstreamError } from '../../domain/errors/index.js';
 import { db } from '../../db/pool.js';
 import { logger } from '../../lib/logger.js';
+import { knowledgeBaseService } from '../knowledge/knowledge-base.service.js';
 import { llmProvider } from '../../providers/llm/llm.factory.js';
 import { ProviderError } from '../../providers/llm/llm-provider.interface.js';
 import { citationRepository } from '../../repositories/citation.repository.js';
@@ -48,7 +49,34 @@ export interface TurnResult {
  * and 13's emission belong to the SSE orchestrator; everything that decides
  * *what* the answer is lives here, where it can be tested without a socket.
  */
+/**
+ * The retrieval scope for a conversation (docs/07-knowledge-base.md §6.2).
+ *
+ * Returns `undefined` for an unscoped conversation and an array — possibly
+ * empty — for a scoped one. **The two are not interchangeable**: `undefined`
+ * means "search the user's whole corpus" and `[]` means "search nothing",
+ * which is the correct answer for a conversation scoped to an empty Knowledge
+ * Base. Defaulting one into the other would answer that conversation from
+ * documents it was never scoped to.
+ *
+ * The list is derived from the membership table under the conversation's own
+ * owner. **Nothing here is taken from the request.** A client-supplied
+ * document list would be an authorization decision made by the client.
+ */
+async function resolveScope(
+  conversationId: string,
+  userId: string,
+): Promise<string[] | undefined> {
+  const conversation = await conversationRepository.findById(conversationId, userId);
+  if (conversation?.knowledgeBaseId == null) return undefined;
+
+  return knowledgeBaseService.documentIdsFor(userId, conversation.knowledgeBaseId);
+}
+
 export const chatService = {
+  /** See `resolveScope`. Exposed so the streaming orchestrator shares it. */
+  scopeFor: resolveScope,
+
   /**
    * Runs one complete turn, non-streaming.
    *
@@ -103,6 +131,7 @@ export const chatService = {
     const bundle = await retrievalService.retrieve({
       userId: input.userId,
       query: input.content,
+      documentIds: await resolveScope(input.conversationId, input.userId),
     });
 
     /*
@@ -310,12 +339,54 @@ export const chatService = {
    * Every failure path is swallowed: the guard is `title_generated = false` in
    * SQL, the model call is best-effort, and a bad title is discarded rather
    * than saved. None of it may affect the answer the user is already reading.
+   *
+   * The model is the preferred namer, not the only one. When it is unreachable
+   * — a 503, a rate limit, a timeout — the conversation still gets a name
+   * derived from the question itself, because the alternative is a permanent
+   * row of identical "New conversation" entries in the sidebar: the list is
+   * navigation, and navigation whose labels are all the same string is not
+   * navigation. The fallback is deliberately worse than the model's output and
+   * deliberately better than nothing.
    */
-  async maybeTitle(conversationId: string, userId: string, question: string): Promise<void> {
+  async maybeTitle(
+    conversationId: string,
+    userId: string,
+    question: string,
+    options: { useModel?: boolean } = {},
+  ): Promise<void> {
     try {
       const conversation = await conversationRepository.findById(conversationId, userId);
       if (conversation === null || conversation.titleGenerated) return;
 
+      /*
+        `useModel: false` is the abstention path (chat.stream §7), which
+        deliberately answers without calling the model. Spending a completion
+        on the *title* of a turn that just avoided spending one on the answer
+        would undo the saving for a cosmetic gain — and the deterministic
+        title is derived from the question, which an abstention has just as
+        much as any other turn.
+      */
+      const title =
+        options.useModel === false
+          ? fallbackTitle(question)
+          : await this.generateTitle(question, conversationId);
+
+      if (title.length === 0) return;
+
+      await conversationRepository.setGeneratedTitle(conversationId, userId, title);
+    } catch (error) {
+      logger.warn({ err: error, conversationId }, 'Titling failed — conversation keeps its default name');
+    }
+  },
+
+  /**
+   * The model's title, or the question's own words when the model cannot be
+   * reached. Only the *call* is guarded here — a failure to persist is the
+   * caller's problem, and swallowing it here would hide a database fault
+   * behind a plausible-looking title.
+   */
+  async generateTitle(question: string, conversationId: string): Promise<string> {
+    try {
       const completion = await llmProvider.complete({
         messages: [
           { role: 'system', content: TITLE_PROMPT },
@@ -328,14 +399,112 @@ export const chatService = {
       });
 
       const title = cleanTitle(completion.content);
-      if (title.length === 0) return;
+      // An empty completion is a failed completion. Falling through to the
+      // deterministic path is strictly better than leaving the placeholder,
+      // and costs nothing the user waits on.
+      if (title.length > 0) return title;
 
-      await conversationRepository.setGeneratedTitle(conversationId, userId, title);
+      logger.warn({ conversationId }, 'Titling returned nothing — falling back to the question');
     } catch (error) {
-      logger.warn({ err: error, conversationId }, 'Titling failed — conversation keeps its default name');
+      logger.warn({ err: error, conversationId }, 'Titling failed — falling back to the question');
     }
+
+    return fallbackTitle(question);
   },
 };
+
+/**
+ * Openers that carry no topic.
+ *
+ * Stripped from the front of a question so the fallback title starts at the
+ * subject: "Can you explain how the retrieval pipeline works" is a sentence
+ * about a pipeline, and the first five words say only that someone is being
+ * polite.
+ *
+ * Prefixes only, and a fixed list on purpose. Stripping filler wherever it
+ * appears would cut the middle out of "explain the difference between X and
+ * Y"; a stemmer or a stop-word set would do that enthusiastically and produce
+ * titles nobody can trace back to what they asked.
+ *
+ * Note that "…explain how" is listed separately from "…explain": in "explain
+ * how the pipeline works" the "how" belongs to the filler, while in "How does
+ * ingress work?" it is the question itself and the best title there is. The
+ * difference is whether something was stripped in front of it.
+ *
+ * Sorted longest-first at load rather than by hand, so the list can be edited
+ * in any order without "can you" quietly shadowing "can you explain how" and
+ * stranding two filler words at the head of every title.
+ */
+const FILLER_PREFIXES = [
+  'can you please explain how',
+  'could you please explain how',
+  'can you please explain',
+  'could you please explain',
+  'can you explain how',
+  'could you explain how',
+  'can you explain',
+  'could you explain',
+  'can you tell me about',
+  'could you tell me about',
+  'i would like to know',
+  'i want to understand',
+  'please help me with',
+  'please explain how',
+  'please explain',
+  'help me understand',
+  'help me debug',
+  'help me with',
+  'tell me about',
+  'i want to know',
+  'i need help with',
+  'can you help me',
+  'could you help me',
+  'what exactly is',
+  'what exactly are',
+  'explain how',
+  'can you',
+  'could you',
+  'please',
+  'explain',
+].sort((a, b) => b.length - a.length);
+
+/**
+ * A title derived from the question, for when the model cannot supply one.
+ *
+ * Casing is left alone apart from the first character. Title Case would
+ * mangle the identifiers these questions are usually *about* — `useEffect`,
+ * `pg_isready`, `RAG` — and a sidebar row that says "Pg_Isready Timeout" is a
+ * worse label than one that says "pg_isready timeout", because the first is
+ * not searchable and the second is.
+ */
+export function fallbackTitle(question: string): string {
+  const collapsed = question.replace(/\s+/g, ' ').trim();
+  if (collapsed.length === 0) return '';
+
+  let body = collapsed;
+  for (const prefix of FILLER_PREFIXES) {
+    if (body.toLowerCase().startsWith(`${prefix} `)) {
+      body = body.slice(prefix.length + 1);
+      break;
+    }
+  }
+
+  // Leading articles read as noise once the filler in front of them is gone:
+  // "the hybrid retrieval pipeline" is a phrase, "The hybrid retrieval" is a
+  // truncated one.
+  body = body.replace(/^(the|a|an) /i, '');
+
+  // Trailing question marks and the like. `cleanTitle` strips a period, but a
+  // question is the input here and "?" is the punctuation it actually ends on.
+  const trimmed = body.replace(/[?!.,;:]+$/, '').trim();
+  if (trimmed.length === 0) {
+    // Nothing but filler — the original question is a better label than none.
+    return cleanTitle(collapsed);
+  }
+
+  const title = cleanTitle(trimmed);
+  return title.charAt(0).toUpperCase() + title.slice(1);
+}
 
 /**
  * Makes a model's reply safe to put in a sidebar row.

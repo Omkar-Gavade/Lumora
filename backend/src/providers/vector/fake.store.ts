@@ -104,12 +104,29 @@ export class FakeVectorStore implements VectorStore {
   }
 }
 
+/**
+ * The fake understands every operator the real store does.
+ *
+ * If it did not, a retrieval test written against the fake would pass while
+ * the same filter changed nothing against Chroma — which is the precise shape
+ * of bug the fake exists to catch rather than to hide.
+ */
 function matchesFilter(record: VectorRecord, filter?: MetadataFilter): boolean {
   if (!filter) return true;
 
-  return Object.entries(filter).every(
-    ([key, value]) => (record.metadata as unknown as Record<string, unknown>)[key] === value,
-  );
+  const metadata = record.metadata as unknown as Record<string, unknown>;
+
+  return Object.entries(filter).every(([key, value]) => {
+    const actual = metadata[key];
+
+    // An `$in` over an empty list matches nothing, which is the correct
+    // reading of "restricted to none of these" and mirrors Chroma.
+    if (typeof value === 'object' && value !== null && '$in' in value) {
+      return value.$in.some((candidate) => candidate === actual);
+    }
+
+    return actual === value;
+  });
 }
 
 /**

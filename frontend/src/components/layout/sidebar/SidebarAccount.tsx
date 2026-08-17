@@ -77,7 +77,11 @@ export function SidebarAccount({ collapsed }: { collapsed: boolean }) {
   );
 
   return (
-    <div className={cn('border-t border-line', collapsed ? 'px-3 py-3' : 'p-3')}>
+    // `pb-safe` last, so its padding-bottom wins over the shorthand: the
+    // drawer runs to the bottom of the screen, and this pinned row is what the
+    // iOS home indicator lands on. It resolves to the same 0.75rem everywhere
+    // else, so nothing moves on a desktop.
+    <div className={cn('border-t border-line', collapsed ? 'px-3 py-3' : 'p-3', 'pb-safe')}>
       {!collapsed && (
         <div className="mb-3 px-2.5">
           <div className="flex items-baseline justify-between gap-2">

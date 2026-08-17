@@ -9,17 +9,11 @@ import { EmptyState } from '@/components/common/EmptyState';
 import { Button } from '@/components/ui/Button';
 import { Alert } from '@/components/ui/Alert';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { ConversationList } from '@/features/chat/components/ConversationList';
+import { ConversationScope } from '@/features/chat/components/ConversationScope';
 import { MessageBubble } from '@/features/chat/components/MessageBubble';
 import { StreamingMessage } from '@/features/chat/components/StreamingMessage';
 import { useStreamingTurn } from '@/features/chat/hooks/useStreamingTurn';
-import {
-  useConversation,
-  useConversations,
-  useCreateConversation,
-  useDeleteConversation,
-  useRenameConversation,
-} from '@/features/chat/hooks/useChat';
+import { useConversation, useCreateConversation } from '@/features/chat/hooks/useChat';
 
 /**
  * The chat surface.
@@ -33,11 +27,8 @@ export function ChatPage() {
   const { conversationId } = useParams<{ conversationId: string }>();
   const navigate = useNavigate();
 
-  const conversations = useConversations();
   const thread = useConversation(conversationId);
   const create = useCreateConversation();
-  const rename = useRenameConversation();
-  const remove = useDeleteConversation();
   const stream = useStreamingTurn();
 
   const [draft, setDraft] = useState('');
@@ -147,34 +138,18 @@ export function ChatPage() {
 
   return (
     <PageContainer title="Chat" bare>
+      {/*
+        One column. The conversation list lives in the app sidebar now
+        (docs/00-product.md FR-21) rather than in a second panel here — which
+        is what lets the thread have the whole width on a phone, and what
+        stops there being two conversation lists to keep in sync.
+      */}
       <div className="flex min-h-0 flex-1">
-        {/*
-          The thread list is hidden below `lg`. On a phone the app sidebar is
-          already a drawer, and a second permanent panel would leave the thread
-          itself too narrow to read.
-        */}
-        <aside className="hidden w-64 shrink-0 border-r border-line lg:block">
-          <ConversationList
-            conversations={conversations.data?.items ?? []}
-            activeId={conversationId}
-            loading={conversations.isPending}
-            busy={create.isPending}
-            onSelect={(id) => { void navigate(buildRoute.conversation(id)); }}
-            onCreate={() => { void navigate(ROUTES.chat); }}
-            onRename={(id, title) => rename.mutate({ id, title })}
-            onDelete={(id) => {
-              remove.mutate(id, {
-                // Leaving the user on a thread that no longer exists would
-                // show them a 404 for something they just deleted.
-                onSuccess: () => {
-                  if (id === conversationId) void navigate(ROUTES.chat);
-                },
-              });
-            }}
-          />
-        </aside>
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          {/* Names the knowledge base this thread answers from, when it has
+              one. Renders nothing for an unscoped conversation. */}
+          <ConversationScope knowledgeBaseId={thread.data?.conversation.knowledgeBaseId} />
 
-        <div className="flex min-h-0 flex-1 flex-col">
           <div
             ref={threadRef}
             onScroll={(event) => {
@@ -304,7 +279,9 @@ export function ChatPage() {
             </div>
           )}
 
-          <div className="border-t border-line px-4 py-3 sm:px-6">
+          {/* `pb-safe` clears the iOS home indicator, which otherwise sits on
+              top of the send button on every notched phone. */}
+          <div className="border-t border-line px-4 pt-3 pb-safe sm:px-6">
             <form
               onSubmit={(event) => {
                 event.preventDefault();
@@ -337,9 +314,27 @@ export function ChatPage() {
                 }}
                 rows={1}
                 maxLength={MAX_MESSAGE_LENGTH}
-                placeholder="Ask a question about your documents…"
+                /*
+                  Shorter than the sentence this used to be, because at the
+                  touch font size below it wrapped to a second line inside a
+                  one-line field and the tail was clipped. A placeholder that
+                  cannot be read whole is worse than a terse one.
+                */
+                placeholder="Ask about your documents…"
                 aria-label="Your question"
-                className="max-h-40 min-h-[2.5rem] flex-1 resize-none rounded-md border border-line bg-surface px-3 py-2 text-body-sm text-primary outline-none placeholder:text-tertiary focus-visible:border-focus"
+                /*
+                  16px on touch, 14px once there is a pointer.
+
+                  Not a design change — a Safari one. iOS zooms the viewport
+                  when a focused field's text is under 16px, and the zoom
+                  neither reverts on blur nor respects the layout: the composer
+                  ends up half off-screen the moment the keyboard opens. Both
+                  steps are existing tokens, and the desktop size is unchanged.
+
+                  The touch minimum height goes to 44px for the same reason the
+                  sidebar rows do; the desktop 40px is untouched.
+                */
+                className="max-h-40 min-h-11 flex-1 resize-none rounded-md border border-line bg-surface px-3 py-2 text-body text-primary outline-none placeholder:text-tertiary focus-visible:border-focus md:min-h-[2.5rem] md:text-body-sm"
               />
 
               {/*

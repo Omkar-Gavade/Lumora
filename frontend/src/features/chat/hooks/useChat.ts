@@ -41,7 +41,14 @@ export function useCreateConversation() {
   const client = useQueryClient();
 
   return useMutation({
-    mutationFn: (title?: string) => createConversation(title),
+    /*
+      An options object rather than positional arguments: a conversation can
+      now be created with a title, a knowledge base, both, or neither, and
+      `createConversation(undefined, id)` is the call site that eventually
+      passes them in the wrong order.
+    */
+    mutationFn: (input?: { title?: string; knowledgeBaseId?: string }) =>
+      createConversation(input?.title, input?.knowledgeBaseId),
     onSuccess: () => {
       void client.invalidateQueries({ queryKey: queryKeys.conversations.all() });
     },

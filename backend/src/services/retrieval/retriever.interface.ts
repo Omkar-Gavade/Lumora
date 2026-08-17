@@ -34,7 +34,21 @@ export interface RetrievalQuery {
   /** Tenant scope. Never optional, never client-supplied. */
   userId: string;
   topK: number;
-  /** Restrict to these documents. `undefined` or empty means the whole corpus. */
+  /**
+   * Restrict retrieval to these documents.
+   *
+   *   `undefined` → unscoped; the user's whole corpus
+   *   `[]`        → scoped to nothing; no retriever may return a result
+   *   `[...]`     → scoped to exactly these documents
+   *
+   * The middle case is not the same as the first, and the previous wording
+   * here ("`undefined` or empty means the whole corpus") described neither
+   * half accurately — the lexical retriever has always returned nothing for an
+   * empty list. docs/07-knowledge-base.md §6.3 settles it in favour of the
+   * lexical reading, because the caller that produces an empty list is an
+   * empty Knowledge Base, and answering that from the whole corpus would
+   * ignore the scope the user chose.
+   */
   documentIds?: string[] | undefined;
 }
 

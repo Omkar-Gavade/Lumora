@@ -150,3 +150,26 @@ export type {
   StreamErrorEvent,
   ChatStreamEvent,
 } from './types/stream.js';
+
+export {
+  KB_NAME_MAX_LENGTH,
+  KB_DESCRIPTION_MAX_LENGTH,
+  MAX_DOCUMENTS_PER_REQUEST,
+  knowledgeBaseNameSchema,
+  knowledgeBaseDescriptionSchema,
+  createKnowledgeBaseSchema,
+  updateKnowledgeBaseSchema,
+  addKnowledgeBaseDocumentsSchema,
+  knowledgeBaseIdParamSchema,
+  knowledgeBaseDocumentParamSchema,
+  type CreateKnowledgeBaseRequest,
+  type UpdateKnowledgeBaseRequest,
+  type AddKnowledgeBaseDocumentsRequest,
+} from './schemas/knowledge.schemas.js';
+
+export type {
+  KnowledgeBaseDto,
+  KnowledgeBaseListDto,
+  KnowledgeBaseDocumentsDto,
+  AddKnowledgeBaseDocumentsResultDto,
+} from './types/knowledge.js';

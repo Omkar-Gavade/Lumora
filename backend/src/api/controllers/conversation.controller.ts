@@ -48,7 +48,9 @@ export async function create(req: Request, res: Response): Promise<void> {
   const actor = requireActor(req);
   const body = req.body as CreateConversationRequest;
 
-  res.status(201).json(await conversationService.create(actor.userId, body.title));
+  res
+    .status(201)
+    .json(await conversationService.create(actor.userId, body.title, body.knowledgeBaseId));
 }
 
 export async function list(req: Request, res: Response): Promise<void> {
@@ -72,8 +74,28 @@ export async function detail(req: Request, res: Response): Promise<void> {
 export async function update(req: Request, res: Response): Promise<void> {
   const actor = requireActor(req);
   const body = req.body as UpdateConversationRequest;
+  const id = idFrom(req);
 
-  res.status(200).json(await conversationService.update(actor.userId, idFrom(req), body));
+  /*
+    The scope is written through its own service call, because it is the one
+    field with a precondition — the conversation must have no messages
+    (docs/07 §2.2) — and folding it into the generic update would either lose
+    that guard or impose it on renaming too.
+  */
+  if (body.knowledgeBaseId !== undefined) {
+    const scoped = await conversationService.setKnowledgeBase(
+      actor.userId,
+      id,
+      body.knowledgeBaseId,
+    );
+
+    if (body.title === undefined && body.archived === undefined) {
+      res.status(200).json(scoped);
+      return;
+    }
+  }
+
+  res.status(200).json(await conversationService.update(actor.userId, id, body));
 }
 
 export async function remove(req: Request, res: Response): Promise<void> {

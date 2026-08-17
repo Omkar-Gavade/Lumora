@@ -167,8 +167,26 @@ export interface ConversationsTable {
   message_count: Generated<number>;
   last_message_at: ColumnType<Date | null, string | null, string | null>;
   archived_at: ColumnType<Date | null, string | null, string | null>;
+  /** Retrieval scope (docs/07 §5). `null` is unscoped — the existing behaviour. */
+  knowledge_base_id: ColumnType<string | null, string | null, string | null>;
   created_at: ColumnType<Date, string | undefined, never>;
   updated_at: ColumnType<Date, string | undefined, string | undefined>;
+}
+
+export interface KnowledgeBasesTable {
+  id: Generated<string>;
+  user_id: string;
+  name: string;
+  description: string | null;
+  created_at: ColumnType<Date, string | undefined, never>;
+  updated_at: ColumnType<Date, string | undefined, string | undefined>;
+}
+
+/** Many-to-many membership. The composite PK is the dedup (docs/07 §5.1). */
+export interface KnowledgeBaseDocumentsTable {
+  knowledge_base_id: string;
+  document_id: string;
+  created_at: ColumnType<Date, string | undefined, never>;
 }
 
 /** Matches the `message_role` enum. */
@@ -231,4 +249,6 @@ export interface DB {
   conversations: ConversationsTable;
   messages: MessagesTable;
   message_citations: MessageCitationsTable;
+  knowledge_bases: KnowledgeBasesTable;
+  knowledge_base_documents: KnowledgeBaseDocumentsTable;
 }

@@ -94,10 +94,19 @@ export async function streamTurn(input: StreamTurnInput, sse: SseWriter): Promis
     // ── Step 5 ────────────────────────────────────────────────────────────
     sse.emit('status', { phase: 'retrieving' });
 
-    // ── Step 6: retrieval, unchanged from M5 ──────────────────────────────
+    /*
+      ── Step 6: retrieval ───────────────────────────────────────────────────
+
+      Unchanged from M5 except for the scope. A conversation with no Knowledge
+      Base passes `undefined` and takes exactly the path it always has; a
+      scoped one passes the document ids resolved from its base. `[]` — an
+      empty Knowledge Base — is a real value meaning "nothing is in scope", and
+      must not be collapsed into `undefined` (docs/07 §6.3).
+    */
     const bundle = await retrievalService.retrieve({
       userId: input.userId,
       query: input.content,
+      documentIds: await chatService.scopeFor(input.conversationId, input.userId),
     });
 
     if (controller.signal.aborted) {
@@ -137,6 +146,18 @@ export async function streamTurn(input: StreamTurnInput, sse: SseWriter): Promis
         finishReason: 'abstained',
         message: toWireMessage(finalized ?? assistantMessage, []),
       });
+
+      /*
+        An abstained turn still names its conversation.
+
+        The question was asked, and the sidebar is navigation now
+        (docs/00-product.md FR-21) — a thread that answered "no documents yet"
+        is exactly the one a new user has most of, and leaving every one of
+        them called "New conversation" makes the list useless on the account
+        that needs it most. Deterministic, so this branch keeps its promise
+        not to call the model.
+      */
+      await emitTitle(input, sse, log, { useModel: false });
       return;
     }
 
@@ -398,9 +419,14 @@ async function finalizeStopped(
 }
 
 /** Step 13. Never allowed to affect the answer the user already has. */
-async function emitTitle(input: StreamTurnInput, sse: SseWriter, log: Logger): Promise<void> {
+async function emitTitle(
+  input: StreamTurnInput,
+  sse: SseWriter,
+  log: Logger,
+  options: { useModel?: boolean } = {},
+): Promise<void> {
   try {
-    await chatService.maybeTitle(input.conversationId, input.userId, input.content);
+    await chatService.maybeTitle(input.conversationId, input.userId, input.content, options);
 
     const conversation = await conversationRepository.findById(input.conversationId, input.userId);
     if (conversation?.titleGenerated !== true) return;

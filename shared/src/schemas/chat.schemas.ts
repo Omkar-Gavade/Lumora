@@ -21,6 +21,13 @@ export const messageContentSchema = z
 /** `POST /conversations` — an empty body is valid; the title is optional. */
 export const createConversationSchema = z.object({
   title: z.string().trim().min(1).max(MAX_CONVERSATION_TITLE_LENGTH).optional(),
+  /**
+   * Scope the conversation to a Knowledge Base (docs/07 §5).
+   *
+   * Omitted means unscoped, which is what every conversation was before the
+   * feature existed and what every existing conversation stays.
+   */
+  knowledgeBaseId: z.uuid('That knowledge base id is not valid.').optional(),
 });
 
 export type CreateConversationRequest = z.infer<typeof createConversationSchema>;
@@ -36,10 +43,20 @@ export const updateConversationSchema = z
   .object({
     title: z.string().trim().min(1).max(MAX_CONVERSATION_TITLE_LENGTH).optional(),
     archived: z.boolean().optional(),
+    /**
+     * Change or clear the retrieval scope (docs/07 §2.2).
+     *
+     * Accepted only while the conversation has no messages; the server answers
+     * 409 afterwards. `null` clears the scope back to the whole corpus.
+     */
+    knowledgeBaseId: z.uuid('That knowledge base id is not valid.').nullable().optional(),
   })
   .refine(
-    (value) => value.title !== undefined || value.archived !== undefined,
-    'Provide a title or an archived flag.',
+    (value) =>
+      value.title !== undefined ||
+      value.archived !== undefined ||
+      value.knowledgeBaseId !== undefined,
+    'Provide a title, an archived flag, or a knowledge base.',
   );
 
 export type UpdateConversationRequest = z.infer<typeof updateConversationSchema>;

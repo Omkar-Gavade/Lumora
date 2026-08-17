@@ -5,6 +5,7 @@ import { authRouter } from './auth.routes.js';
 import { conversationRouter, messageRouter } from './conversation.routes.js';
 import { documentRouter } from './document.routes.js';
 import { healthRouter } from './health.routes.js';
+import { knowledgeBaseRouter } from './knowledge-base.routes.js';
 import { searchRouter } from './search.routes.js';
 import { userRouter } from './user.routes.js';
 
@@ -32,6 +33,7 @@ export function registerRoutes(app: Express): void {
   api.use('/auth', authRouter);
   api.use('/users', userRouter);
   api.use('/documents', documentRouter);
+  api.use('/knowledge-bases', knowledgeBaseRouter);
   api.use('/conversations', conversationRouter);
   // Mounted at the root of the API rather than under a conversation, matching
   // the documented path in docs/04-data-and-api.md §2.4.

@@ -66,6 +66,19 @@ export const retrievalService = {
       queryLength: text.length,
       queryTerms: text.split(' ').length,
       filtered: (input.documentIds?.length ?? 0) > 0,
+      /*
+        Whether a scope was applied at all, separately from whether it had
+        anything in it (docs/07 §6.3). `filtered` alone cannot tell an
+        unscoped search from one scoped to an empty Knowledge Base — both
+        report `false` — and those two produce opposite results, so a log that
+        conflates them cannot explain why an answer was empty.
+
+        Counts and flags only. The document ids are a user's private filing,
+        the query is a question about private material, and neither belongs in
+        an aggregator (docs/03-backend.md §6).
+      */
+      scoped: input.documentIds !== undefined,
+      scopeSize: input.documentIds?.length ?? null,
     });
 
     const result = await hybrid.retrieve(

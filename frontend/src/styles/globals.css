@@ -161,6 +161,27 @@
 }
 
 /*
+  Bottom padding that clears the iOS home indicator.
+
+  `@utility` rather than a class in `@layer base`, because a base-layer class
+  loses to `p-3` from the utilities layer and would silently do nothing. As a
+  real utility it also sorts after the padding shorthand, the same way `pb-0`
+  does, so `p-3 pb-safe` behaves the way it reads.
+
+  A utility rather than an arbitrary `pb-[env(...)]` at each call site: the
+  lint rule banning arbitrary spacing is right, and `env()` is exactly the
+  kind of value that gets pasted into four components and updated in three.
+
+  `max()` keeps the declared step on hardware with no inset, so this never
+  *removes* padding — on a desktop it is the 0.75rem the composer already had.
+  Paired with `viewport-fit=cover` in index.html, without which every inset
+  reports 0 and this does nothing at all.
+*/
+@utility pb-safe {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+/*
   `inline` keeps the var reference intact, so utilities resolve to the
   semantic custom property at runtime and follow [data-theme] automatically.
 */

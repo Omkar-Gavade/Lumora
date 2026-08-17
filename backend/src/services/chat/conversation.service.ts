@@ -6,8 +6,9 @@ import type {
   CitationDto,
 } from '@lumora/shared';
 import { db } from '../../db/pool.js';
-import { NotFoundError } from '../../domain/errors/index.js';
+import { ConflictError, NotFoundError } from '../../domain/errors/index.js';
 import { logger } from '../../lib/logger.js';
+import { knowledgeBaseService } from '../knowledge/knowledge-base.service.js';
 import { citationRepository, type Citation } from '../../repositories/citation.repository.js';
 import {
   conversationRepository,
@@ -24,11 +25,64 @@ import { messageRepository, type Message } from '../../repositories/message.repo
  * renamed thread in the same file as token budgeting.
  */
 export const conversationService = {
-  async create(userId: string, title?: string): Promise<ConversationDto> {
-    const conversation = await conversationRepository.create(userId, title);
-    logger.info({ userId, conversationId: conversation.id }, 'Conversation created');
+  /**
+   * Creates a conversation, optionally scoped to a Knowledge Base.
+   *
+   * The base is verified to be the caller's *before* the insert, so a foreign
+   * id fails as a 404 rather than being written and silently ignored at
+   * retrieval time.
+   */
+  async create(
+    userId: string,
+    title?: string,
+    knowledgeBaseId?: string | null,
+  ): Promise<ConversationDto> {
+    if (knowledgeBaseId != null) {
+      await knowledgeBaseService.requireOwned(userId, knowledgeBaseId);
+    }
+
+    const conversation = await conversationRepository.create(userId, title, knowledgeBaseId);
+    logger.info(
+      { userId, conversationId: conversation.id, scoped: knowledgeBaseId != null },
+      'Conversation created',
+    );
 
     return toConversationDto(conversation);
+  },
+
+  /**
+   * Changes the retrieval scope, which is only allowed before the first turn
+   * (docs/07 §2.2).
+   *
+   * Enforced here **and** in SQL. The `WHERE message_count = 0` guard in the
+   * repository is what makes it correct under a race with a turn in flight;
+   * this layer exists to turn the resulting empty update into the right error,
+   * which needs a follow-up read to tell "not yours" (404) from "too late"
+   * (409).
+   */
+  async setKnowledgeBase(
+    userId: string,
+    conversationId: string,
+    knowledgeBaseId: string | null,
+  ): Promise<ConversationDto> {
+    if (knowledgeBaseId !== null) {
+      await knowledgeBaseService.requireOwned(userId, knowledgeBaseId);
+    }
+
+    const updated = await conversationRepository.setKnowledgeBase(
+      conversationId,
+      userId,
+      knowledgeBaseId,
+    );
+
+    if (updated !== null) return toConversationDto(updated);
+
+    const existing = await conversationRepository.findById(conversationId, userId);
+    if (existing === null) throw new NotFoundError('Conversation not found.');
+
+    throw new ConflictError(
+      'This conversation has already started, so its knowledge base cannot be changed. Start a new chat to use a different one.',
+    );
   },
 
   async list(
@@ -101,6 +155,7 @@ export function toConversationDto(conversation: Conversation): ConversationDto {
     // A boolean on the wire rather than the timestamp: no client needs to know
     // *when* a thread was archived, and exposing it invites a UI that shows it.
     archived: conversation.archivedAt !== null,
+    knowledgeBaseId: conversation.knowledgeBaseId,
     createdAt: conversation.createdAt.toISOString(),
     updatedAt: conversation.updatedAt.toISOString(),
   };

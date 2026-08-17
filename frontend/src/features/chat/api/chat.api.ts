@@ -22,10 +22,18 @@ export async function getConversation(id: string): Promise<ConversationDetailDto
   return request<ConversationDetailDto>(`/conversations/${id}`);
 }
 
-export async function createConversation(title?: string): Promise<ConversationDto> {
+export async function createConversation(
+  title?: string,
+  knowledgeBaseId?: string,
+): Promise<ConversationDto> {
   return request<ConversationDto>('/conversations', {
     method: 'POST',
-    body: title === undefined ? {} : { title },
+    body: {
+      ...(title === undefined ? {} : { title }),
+      // Omitted rather than sent as null: the server reads an absent field as
+      // "unscoped", which is the default the column already has.
+      ...(knowledgeBaseId === undefined ? {} : { knowledgeBaseId }),
+    },
   });
 }
 

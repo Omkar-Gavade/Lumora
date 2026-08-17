@@ -3,18 +3,13 @@ import { Plus } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { ROUTES } from '@/app/router/routes';
 import { NAV_GROUPS } from '@/app/config/navigation';
+import { useSidebar } from '@/app/providers/SidebarProvider';
 import { LogoMark } from '@/components/common/Logo';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { SidebarAccount } from './SidebarAccount';
-import { SidebarEmptyState } from './SidebarEmptyState';
+import { SidebarConversations } from './SidebarConversations';
 import { SidebarGroup } from './SidebarGroup';
 import { SidebarItem } from './SidebarItem';
-
-/**
- * Conversation history. Empty until the chat feature lands — the empty branch
- * is the state a new account is actually in, so it is the one worth designing.
- */
-const RECENT_CONVERSATIONS: { id: string; title: string }[] = [];
 
 /**
  * Everything inside the sidebar, independent of how the sidebar is mounted.
@@ -36,6 +31,8 @@ const RECENT_CONVERSATIONS: { id: string; title: string }[] = [];
  *              must never require a scroll
  */
 export function SidebarContent({ collapsed }: { collapsed: boolean }) {
+  const { closeDrawer } = useSidebar();
+
   return (
     <div className="flex h-full flex-col bg-sidebar">
       {/* ── Identity ─────────────────────────────────────────────────────── */}
@@ -76,6 +73,14 @@ export function SidebarContent({ collapsed }: { collapsed: boolean }) {
           <Tooltip label="New chat" side="right" disabled={!collapsed}>
             <Link
               to={ROUTES.chat}
+              /*
+                The drawer closes on navigation by deriving "open" from the
+                route it was opened on — but starting a new chat *from* the
+                new-chat route is not a navigation, so nothing changes and the
+                drawer would stay open over an empty composer. Closing here
+                covers the one case the derivation cannot see.
+              */
+              onClick={closeDrawer}
               className={cn(
                 'group flex items-center rounded-md border border-line-default bg-raised',
                 'text-body-sm font-medium text-primary shadow-e1',
@@ -110,24 +115,7 @@ export function SidebarContent({ collapsed }: { collapsed: boolean }) {
               </SidebarGroup>
             ))}
 
-            {/* The rail has no room for a list of titles, and a column of
-                identical chat glyphs would carry no information at all. */}
-            {!collapsed && (
-              <SidebarGroup label="Recent" collapsed={false}>
-                {RECENT_CONVERSATIONS.length === 0 ? (
-                  <li>
-                    <SidebarEmptyState
-                      title="No conversations yet"
-                      description="Ask something about your documents and it will appear here."
-                    />
-                  </li>
-                ) : (
-                  RECENT_CONVERSATIONS.map((conversation) => (
-                    <li key={conversation.id}>{conversation.title}</li>
-                  ))
-                )}
-              </SidebarGroup>
-            )}
+            <SidebarConversations collapsed={collapsed} />
           </div>
         </nav>
       </div>

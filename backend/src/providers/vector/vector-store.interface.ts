@@ -45,8 +45,24 @@ export interface VectorMatch {
   metadata: VectorMetadata;
 }
 
-/** Equality filters over stored metadata. */
-export type MetadataFilter = Record<string, string | number | boolean>;
+/**
+ * Equality, or membership in a set, over stored metadata.
+ *
+ * `$in` is here for exactly one caller — a Knowledge Base scope is a list of
+ * document ids, and expressing it as equality is impossible
+ * (docs/07-knowledge-base.md §6.3, D-2). Before it existed the vector half
+ * over-fetched by four and filtered in memory, which silently returned fewer
+ * than `topK` results whenever the scoped documents were a small slice of a
+ * large corpus.
+ *
+ * **Deliberately not a query language.** No `$gt`, no `$or`, no nesting. Every
+ * operator added here has to be implemented by every store — including the
+ * fake, which is what keeps tests honest — so the bar for a second one is a
+ * caller that cannot be served by these two.
+ */
+export type MetadataFilterValue = string | number | boolean | { $in: string[] };
+
+export type MetadataFilter = Record<string, MetadataFilterValue>;
 
 /**
  * The vector index, behind an interface (docs/05-rag-and-chat.md §2.5).

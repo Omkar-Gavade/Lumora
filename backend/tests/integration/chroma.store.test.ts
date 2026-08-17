@@ -253,6 +253,66 @@ describe.skipIf(!reachable)('ChromaVectorStore (live server)', () => {
     expect(health.ok).toBe(true);
     expect(health.latencyMs).toBeGreaterThanOrEqual(0);
   });
+
+  /*
+    `$in` against the real server (docs/07-knowledge-base.md §6.3, D-2).
+
+    A Knowledge Base scope is a list of document ids, which equality cannot
+    express. These run against live Chroma rather than the fake because the
+    question being asked is whether *Chroma* honours the operator — a fake that
+    implements it proves nothing about the server, and a `where` clause the
+    server silently ignores returns the whole corpus while looking like it
+    filtered.
+  */
+  describe('multi-document $in filtering', () => {
+    const scoped = `${collection}_in`;
+
+    beforeAll(async () => {
+      await store.upsert(scoped, [
+        record({ id: 'kb-a:0', embedding: [1, 0, 0, 0], metadata: { ...record().metadata, documentId: 'kb-a', chunkId: randomUUID() } }),
+        record({ id: 'kb-b:0', embedding: [0.9, 0.1, 0, 0], metadata: { ...record().metadata, documentId: 'kb-b', chunkId: randomUUID() } }),
+        record({ id: 'kb-c:0', embedding: [0.8, 0.2, 0, 0], metadata: { ...record().metadata, documentId: 'kb-c', chunkId: randomUUID() } }),
+      ]);
+    });
+
+    afterAll(async () => {
+      await store.deleteCollection(scoped);
+    });
+
+    it('returns only documents named in the set', async () => {
+      const matches = await store.query(scoped, [1, 0, 0, 0], 10, {
+        documentId: { $in: ['kb-a', 'kb-c'] },
+      });
+
+      expect(new Set(matches.map((match) => match.metadata.documentId))).toEqual(
+        new Set(['kb-a', 'kb-c']),
+      );
+    });
+
+    it('keeps real ids when the set also names one that does not exist', async () => {
+      const matches = await store.query(scoped, [1, 0, 0, 0], 10, {
+        documentId: { $in: ['kb-a', 'does-not-exist'] },
+      });
+
+      expect(matches.map((match) => match.metadata.documentId)).toEqual(['kb-a']);
+    });
+
+    it('returns nothing when no id in the set exists', async () => {
+      // Proves the clause is evaluated rather than dropped: an ignored `where`
+      // would return all three records here.
+      const matches = await store.query(scoped, [1, 0, 0, 0], 10, {
+        documentId: { $in: ['does-not-exist'] },
+      });
+
+      expect(matches).toEqual([]);
+    });
+
+    it('still supports a single-document equality filter', async () => {
+      const matches = await store.query(scoped, [1, 0, 0, 0], 10, { documentId: 'kb-b' });
+
+      expect(matches.map((match) => match.metadata.documentId)).toEqual(['kb-b']);
+    });
+  });
 });
 
 describe.skipIf(reachable)('ChromaVectorStore (server unavailable)', () => {
