@@ -160,6 +160,54 @@ export class GeminiProvider implements LLMProvider {
     body: Record<string, unknown>,
     signal: AbortSignal,
   ): Promise<Response> {
+    /*
+      Retry, because Gemini's transient failures are frequent enough to be a
+      product problem rather than an edge case.
+
+      Observed repeatedly during development: 503 on a healthy request, and 429
+      when a per-minute quota briefly fills. Both are transient and both
+      currently surface to the user as a failed turn, because the embedding
+      path retries per batch and the chat path does not retry at all.
+
+      Only `retryable` errors are retried, so a 400 (a malformed prompt) or a
+      401 (a bad key) fails immediately — retrying those wastes the user's time
+      to reach the same answer. An abort is never retried: the user asked to
+      stop.
+    */
+    let lastError: ProviderError | undefined;
+
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt += 1) {
+      if (signal.aborted) break;
+
+      try {
+        return await this.attempt(path, body, signal);
+      } catch (error) {
+        if (!(error instanceof ProviderError) || !error.retryable) throw error;
+
+        lastError = error;
+        if (attempt === MAX_RETRIES) break;
+
+        /*
+          Exponential with jitter. The jitter matters more than the base here:
+          several concurrent turns failing on the same quota window would
+          otherwise retry in lockstep and refill it together.
+        */
+        const backoff = BASE_BACKOFF_MS * 2 ** attempt;
+        const delay = backoff + Math.floor(Math.random() * backoff);
+
+        await sleep(delay, signal);
+      }
+    }
+
+    throw lastError ?? new ProviderError(this.name, 'request aborted', false);
+  }
+
+  /** One attempt, with no retry logic of its own. */
+  private async attempt(
+    path: string,
+    body: Record<string, unknown>,
+    signal: AbortSignal,
+  ): Promise<Response> {
     let response: Response;
 
     try {
@@ -189,6 +237,33 @@ export class GeminiProvider implements LLMProvider {
 
     return response;
   }
+}
+
+/**
+ * Three retries, so four attempts in total.
+ *
+ * Enough to ride out a quota window boundary or a single unlucky 503, and few
+ * enough that a genuine outage fails in about seven seconds rather than
+ * holding an SSE connection open while the user waits.
+ */
+const MAX_RETRIES = 3;
+const BASE_BACKOFF_MS = 400;
+
+/** A delay that gives up immediately when the turn is aborted. */
+function sleep(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      signal.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+
+    function onAbort(): void {
+      clearTimeout(timer);
+      reject(new ProviderError('gemini', 'request aborted', false));
+    }
+
+    signal.addEventListener('abort', onAbort, { once: true });
+  });
 }
 
 /** `assistant` → `model`; everything else is a user turn. */

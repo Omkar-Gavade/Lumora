@@ -186,13 +186,27 @@ describe('progress is durable', () => {
 
     // The replacement worker: same job, same rows, no shared state.
     failing.mockRestore();
+    /*
+      A minute in the past, not `now()`.
+
+      `jobRepository.claim` filters on `run_after <= now()` evaluated by
+      Postgres, while this value comes from the Node clock. The two are not the
+      same clock, and when the database is even marginally behind, a timestamp
+      of "now" is still in the future to it — the job is not claimable, the
+      worker returns without doing anything, and the document is asserted at
+      `embedding`. That produced a test that failed roughly three runs in four
+      for reasons entirely unrelated to what it is testing.
+    */
     await db
       .updateTable('jobs')
-      .set({ run_after: new Date().toISOString() })
+      .set({ run_after: new Date(Date.now() - 60_000).toISOString() })
       .where('status', '=', 'pending')
       .execute();
 
-    await worker('worker-after-restart').runOnce();
+    // `drain`, not `runOnce`: the restart may leave more than one claimable
+    // unit of work, and the assertion is about the document reaching `ready`
+    // rather than about how many claims that took.
+    await worker('worker-after-restart').drain();
 
     const resumed = await fetchDto(user, documentId);
 

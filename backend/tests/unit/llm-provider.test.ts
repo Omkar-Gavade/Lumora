@@ -567,3 +567,105 @@ describe('GeminiProvider', () => {
     ).rejects.toMatchObject({ retryable: true });
   });
 });
+
+/**
+ * Provider-level retry (docs/11 §Gemini).
+ *
+ * Gemini answers 503 on healthy requests and 429 when a per-minute quota
+ * briefly fills, often enough during ordinary use that a turn failing on the
+ * first transient error is a product defect rather than an edge case. The
+ * embedding path has always retried per batch; the chat path did not.
+ */
+describe('GeminiProvider — transient failure retry', () => {
+  function respond(sequence: (number | 'ok')[]): typeof fetch {
+    let call = 0;
+
+    return function stubbedFetch(): Promise<Response> {
+      const outcome = sequence[Math.min(call, sequence.length - 1)] ?? 'ok';
+      call += 1;
+
+      if (outcome === 'ok') {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              candidates: [{ content: { parts: [{ text: 'Recovered.' }] }, finishReason: 'STOP' }],
+              usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1 },
+            }),
+            { status: 200, headers: { 'content-type': 'application/json' } },
+          ),
+        );
+      }
+
+      return Promise.resolve(new Response('upstream failure', { status: outcome }));
+    };
+  }
+
+  it('retries a 503 and succeeds', async () => {
+    const original = globalThis.fetch;
+    globalThis.fetch = respond([503, 'ok']);
+
+    try {
+      const response = await new GeminiProvider('gemini-x', 1_000_000, 'key').complete(
+        GROUNDED_PROMPT,
+      );
+      expect(response.content).toBe('Recovered.');
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+
+  it('retries a 429 and succeeds', async () => {
+    // The quota-window case: a per-minute limit that refills within seconds.
+    const original = globalThis.fetch;
+    globalThis.fetch = respond([429, 429, 'ok']);
+
+    try {
+      const response = await new GeminiProvider('gemini-x', 1_000_000, 'key').complete(
+        GROUNDED_PROMPT,
+      );
+      expect(response.content).toBe('Recovered.');
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+
+  it('**does not retry a 400 — the request is wrong, not unlucky**', async () => {
+    let calls = 0;
+    const original = globalThis.fetch;
+    globalThis.fetch = function stubbedFetch(): Promise<Response> {
+      calls += 1;
+      return Promise.resolve(new Response('bad request', { status: 400 }));
+    };
+
+    try {
+      await expect(
+        new GeminiProvider('gemini-x', 1_000_000, 'key').complete(GROUNDED_PROMPT),
+      ).rejects.toThrow();
+      // Retrying a malformed prompt spends the user's time reaching the same
+      // answer four times.
+      expect(calls).toBe(1);
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+
+  it('gives up after a bounded number of attempts', async () => {
+    let calls = 0;
+    const original = globalThis.fetch;
+    globalThis.fetch = function stubbedFetch(): Promise<Response> {
+      calls += 1;
+      return Promise.resolve(new Response('still down', { status: 503 }));
+    };
+
+    try {
+      await expect(
+        new GeminiProvider('gemini-x', 1_000_000, 'key').complete(GROUNDED_PROMPT),
+      ).rejects.toThrow();
+      // Four attempts total. A real outage must fail in seconds rather than
+      // holding an SSE connection open while the user waits.
+      expect(calls).toBe(4);
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+});
