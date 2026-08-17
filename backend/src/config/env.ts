@@ -24,7 +24,22 @@ import { PACKAGE_ROOT } from '../lib/paths.js';
 // Real environment variables win over the file; dotenv does not override.
 // That ordering is what lets a container inject configuration over a `.env`
 // that happens to be baked into the image.
-dotenv.config({ path: join(PACKAGE_ROOT, '.env'), quiet: true });
+/*
+  Skippable, for one caller: the production-rule tests.
+
+  Those tests spawn this module in a child process with a hand-built
+  environment and assert that a *missing* variable is rejected. Without this
+  escape they instead read the developer's own `.env` — so a machine
+  configured for Supabase makes "refuses a Supabase endpoint with no access
+  keys" pass validation and fail the test, and the suite reports a fault in the
+  schema that is really a fault in its isolation.
+
+  Real environment variables still win over the file either way; this only
+  decides whether the file is consulted at all.
+*/
+if (process.env.LUMORA_IGNORE_DOTENV !== '1') {
+  dotenv.config({ path: join(PACKAGE_ROOT, '.env'), quiet: true });
+}
 
 const nodeEnvSchema = z.enum(['development', 'test', 'production']);
 

@@ -61,7 +61,12 @@ async function loadEnv(overrides: Record<string, string>): Promise<{
       ['--import', 'tsx', '--eval', "import('./src/config/env.js');"],
       {
         cwd: PACKAGE_ROOT,
-        env: { PATH: process.env.PATH ?? '', ...overrides },
+        /*
+          No inherited environment, and no `.env` either — the child must see
+          exactly what the case supplies. Reading the developer's file made
+          these tests pass or fail depending on whose machine ran them.
+        */
+        env: { PATH: process.env.PATH ?? '', LUMORA_IGNORE_DOTENV: '1', ...overrides },
         timeout: 30_000,
       },
     );
