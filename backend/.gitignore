@@ -11,3 +11,6 @@ uploads
 # Test env (gitignored)
 .env.test
 coverage
+
+# Backups of the secrets file are secrets too.
+.env.bak*
