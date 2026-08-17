@@ -2,11 +2,19 @@
 
 **CURRENT:** local development on Docker.
 **TARGET:** managed cloud deployment serving real multi-user traffic.
-**STATUS: planning complete; implementation not started.**
+**STATUS: the application layer is implemented and verified; no cloud
+infrastructure exists.**
 
-No cloud resource exists. No infrastructure code exists. Nothing in this
-document has been built. It exists so the deployment is executed from a plan
-rather than improvised.
+The storage driver, the vector store, the production configuration rules, the
+container image, and CI are built and tested — see
+[10-production-deployment-runbook.md](10-production-deployment-runbook.md) for
+what was actually verified and how. What remains unbuilt is the cloud itself:
+no AWS resource has been created, because the credentials available were
+invalid.
+
+No cloud resource exists. The Terraform under `infra/terraform` describes S3
+and RDS and has never been applied. This document remains the plan; §5, §6 and
+§7 are now partly implemented, and 10 records exactly which parts.
 
 > Filed as `08-…` in the flat numbered set rather than `docs/architecture/production.md`.
 > The repository's convention is one numbered document per concern at the root
@@ -95,6 +103,15 @@ than duplicates.
 
 **Losing the vector index costs a re-embedding bill and some minutes. Losing
 Postgres or object storage is unrecoverable.** Backup priority follows.
+
+> **Correction, from implementing it.** This section originally implied that
+> Postgres alone was sufficient to rebuild the index. It is not:
+> `scripts/reindex.ts` re-enqueues `INGEST_DOCUMENT`, so the worker re-reads
+> the **original** from object storage and runs the whole pipeline. The
+> accurate invariant is **Postgres + object storage → rebuildable**, which
+> makes the bucket load-bearing for recovery rather than merely for serving.
+> Verified by deleting the entire vector table and rebuilding it — see
+> [10-production-deployment-runbook.md](10-production-deployment-runbook.md) §1.
 
 ---
 

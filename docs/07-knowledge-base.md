@@ -1,11 +1,14 @@
 # 07 — Knowledge Base
 
-**Status: planning complete; implementation not started.**
+**Status: implemented.**
 
-Nothing in this document is built. `/app/knowledge` is a static placeholder
-(`KnowledgeBasePage.tsx`, 24 lines, no hooks, no API calls). This document
-exists so that implementation is a matter of following it rather than
-rediscovering the architecture.
+This document was written as a specification and has since been built to.
+Migration 0007 adds the tables, `/api/v1/knowledge-bases` is live, the UI
+replaces the former placeholder, and the scope boundary is covered by
+dedicated tests — including the assertion that a conversation scoped to one
+base cannot retrieve a document from another. Where the implementation
+diverged from the plan, the sections below were corrected rather than left
+aspirational.
 
 Implements **FR-18 (P1)** from [00-product.md](00-product.md) §2 — "Collections
 (named groups of documents) and per-conversation scoping to a collection" —
