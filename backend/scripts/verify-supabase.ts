@@ -101,13 +101,30 @@ async function main(): Promise<void> {
     dbHost.includes('pooler'),
     dbHost.includes('pooler') ? 'pooler' : 'DIRECT — IPv6 only, Koyeb cannot reach it',
   );
-  record('TLS requested', /sslmode=require/.test(databaseUrl), 'sslmode=require');
+  record('TLS requested', /sslmode=(require|verify-ca|verify-full)/.test(databaseUrl), 'sslmode set');
+  record(
+    'TLS bypass not set',
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED !== '0',
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED === '0'
+      ? 'NODE_TLS_REJECT_UNAUTHORIZED=0 disables verification process-wide'
+      : 'certificate verification active',
+  );
   record('S3_ENDPOINT is Supabase Storage', hostOf(endpoint).includes('supabase'), hostOf(endpoint));
 
   // ── 2. PostgreSQL ─────────────────────────────────────────────────────────
   console.log('\n2. PostgreSQL');
 
-  const client = new Client({ connectionString: databaseUrl });
+  /*
+    Built from the application's own pool configuration rather than from the
+    URL directly, so this verifies the TLS the deployment will actually use —
+    pinned CA, verification on. Constructing a client here from
+    `DATABASE_URL` would test a different connection than the one that ships.
+  */
+  const { databaseConfig } = await import('../src/config/database.js');
+  const client = new Client({
+    connectionString: databaseConfig.connectionString,
+    ...(databaseConfig.ssl === undefined ? {} : { ssl: databaseConfig.ssl }),
+  });
 
   try {
     await client.connect();

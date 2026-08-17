@@ -67,6 +67,11 @@ COPY --from=build /app/shared/dist ./shared/dist
 COPY --from=build /app/shared/package.json ./shared/
 COPY --from=build /app/backend/dist ./backend/dist
 COPY --from=build /app/backend/package.json ./backend/
+
+# The pinned Supabase root CA. Without it the container starts, connects to
+# nothing, and dies on the first query with `self-signed certificate in
+# certificate chain` — `config/database.ts` reads this file at module load.
+COPY --from=build /app/backend/certs ./backend/certs
 COPY --from=build /app/package.json ./
 
 # The image ships its own migrations: `backend/scripts/copy-assets.mjs` copies
