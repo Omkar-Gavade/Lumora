@@ -1,5 +1,6 @@
 import { env } from '../../config/index.js';
 import { LocalStorageProvider } from './local.storage.js';
+import { S3StorageProvider } from './s3.storage.js';
 import type { StorageProvider } from './storage-provider.interface.js';
 
 /**
@@ -20,6 +21,30 @@ export function createStorageProvider(): StorageProvider {
   switch (env.STORAGE_DRIVER) {
     case 'local':
       return new LocalStorageProvider(env.STORAGE_LOCAL_ROOT);
+    case 's3': {
+      const { S3_BUCKET: bucket, S3_REGION: region } = env;
+
+      /*
+        `env.ts` refuses to parse STORAGE_DRIVER=s3 without both of these, so
+        this branch is unreachable. It is a narrowing guard rather than a
+        non-null assertion because the compiler cannot see that cross-field
+        rule, and an assertion would silently become wrong if the rule were
+        ever relaxed.
+      */
+      if (bucket === undefined || region === undefined) {
+        throw new Error('STORAGE_DRIVER=s3 requires S3_BUCKET and S3_REGION');
+      }
+
+      return new S3StorageProvider({
+        bucket,
+        region,
+        endpoint: env.S3_ENDPOINT,
+        forcePathStyle: env.S3_FORCE_PATH_STYLE,
+        serverSideEncryption: env.S3_SERVER_SIDE_ENCRYPTION,
+        accessKeyId: env.S3_ACCESS_KEY_ID,
+        secretAccessKey: env.S3_SECRET_ACCESS_KEY,
+      });
+    }
   }
 }
 

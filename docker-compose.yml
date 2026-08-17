@@ -21,7 +21,11 @@ name: lumora
 
 services:
   postgres:
-    image: postgres:17-alpine
+    # pgvector's own image, which is postgres:17 with the `vector` extension
+    # available. Stock postgres:17 does not ship it, so `CREATE EXTENSION
+    # vector` fails and the production vector store cannot be developed or
+    # tested against a real database (docs/08 §6).
+    image: pgvector/pgvector:pg17
     container_name: lumora-pg
     restart: unless-stopped
     environment:

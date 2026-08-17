@@ -182,6 +182,29 @@ export interface KnowledgeBasesTable {
   updated_at: ColumnType<Date, string | undefined, string | undefined>;
 }
 
+/**
+ * The pgvector index (docs/08 §6).
+ *
+ * A **derived** table: every column is reconstructible from `document_chunks`
+ * and `documents`, which is what makes losing it a re-embedding cost rather
+ * than data loss. `embedding` is deliberately absent from this type — it is a
+ * `vector(768)` that Kysely has no representation for, and nothing outside
+ * `PgVectorStore` (which uses raw SQL) should be reading or writing it.
+ */
+export interface DocumentVectorsTable {
+  collection: string;
+  id: string;
+  text: string;
+  chunk_id: string;
+  document_id: string;
+  user_id: string;
+  document_name: string;
+  chunk_index: number;
+  page_number: number | null;
+  section_path: string | null;
+  created_at: ColumnType<Date, string | undefined, never>;
+}
+
 /** Many-to-many membership. The composite PK is the dedup (docs/07 §5.1). */
 export interface KnowledgeBaseDocumentsTable {
   knowledge_base_id: string;
@@ -251,4 +274,5 @@ export interface DB {
   message_citations: MessageCitationsTable;
   knowledge_bases: KnowledgeBasesTable;
   knowledge_base_documents: KnowledgeBaseDocumentsTable;
+  document_vectors: DocumentVectorsTable;
 }

@@ -167,17 +167,61 @@ const envSchema = z.object({
 
   // ── Storage ────────────────────────────────────────────────────────────────
   /**
-   * Only `local` exists today. S3 is one driver behind the same interface
-   * (docs/05-rag-and-chat.md §2.1); adding it here without adding a factory
-   * arm is a compile error, which is the point.
+   * `local` for development, `s3` for production (docs/08 §5). Both sit behind
+   * the same `StorageProvider` interface; adding a value here without adding a
+   * factory arm is a compile error, which is the point.
    */
-  STORAGE_DRIVER: z.enum(['local']).default('local'),
+  STORAGE_DRIVER: z.enum(['local', 's3']).default('local'),
   /**
    * Where the local driver writes. Never hardcoded — a container mounts a
    * volume somewhere else, and a path baked into the source means documents
    * land on an ephemeral filesystem.
    */
   STORAGE_LOCAL_ROOT: z.string().min(1).default('./uploads'),
+
+  /**
+   * The private bucket holding original uploads. Required when the driver is
+   * `s3`; the cross-field rule below enforces that rather than letting the
+   * first upload fail.
+   */
+  S3_BUCKET: z.string().min(1).optional(),
+
+  /** Bucket region. Separate from any global AWS_REGION so the two cannot drift. */
+  S3_REGION: z.string().min(1).optional(),
+
+  /**
+   * S3-compatible endpoint — MinIO in tests, and nothing in production.
+   *
+   * There is no credential setting here on purpose. The SDK's default provider
+   * chain resolves them, which in production means an ECS task role rather
+   * than a long-lived access key sitting in the process environment.
+   */
+  S3_ENDPOINT: z.url().optional(),
+
+  /**
+   * Server-side encryption requested per object.
+   *
+   * `AES256` (SSE-S3) everywhere that matters. `none` exists only because
+   * S3-compatible test servers answer `NotImplemented` unless a KMS is wired
+   * up; the production rule below refuses it, so it cannot reach a deployment.
+   */
+  S3_SERVER_SIDE_ENCRYPTION: z.enum(['AES256', 'none']).default('AES256'),
+
+  /**
+   * Explicit S3 credentials, for S3-compatible services that are not AWS.
+   *
+   * Omitted for real S3, where the SDK's default chain resolves a task role.
+   * **Required for Supabase Storage**, whose access keys are its own and would
+   * be misread as AWS credentials if smuggled through `AWS_*`.
+   */
+  S3_ACCESS_KEY_ID: z.string().min(1).optional(),
+  S3_SECRET_ACCESS_KEY: z.string().min(1).optional(),
+
+  /** MinIO needs path-style addressing; real S3 does not. */
+  S3_FORCE_PATH_STYLE: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
 
   // ── Chunking ───────────────────────────────────────────────────────────────
   /*
@@ -426,6 +470,25 @@ const REQUIRED_FOR_SMTP = ['SMTP_HOST', 'SMTP_USER', 'SMTP_PASSWORD'] as const;
 /** Hosts that mean "this machine" and therefore never mean "production". */
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '0.0.0.0', 'host.docker.internal']);
 
+/**
+ * Supabase Storage's S3-compatible endpoint.
+ *
+ * `https://<ref>.supabase.co/storage/v1/s3`, or the direct storage hostname
+ * `https://<ref>.storage.supabase.co/storage/v1/s3` which Supabase recommends
+ * for large objects. Matching on the host rather than accepting any endpoint
+ * keeps the rule that a production deploy cannot be pointed at a development
+ * MinIO — the failure that rule exists to prevent, where every upload succeeds
+ * and none of them are in durable storage.
+ */
+function isSupabaseEndpoint(value: string): boolean {
+  try {
+    const host = new URL(value).hostname;
+    return host.endsWith('.supabase.co') || host.endsWith('.supabase.in');
+  } catch {
+    return false;
+  }
+}
+
 function isLocalUrl(value: string): boolean {
   try {
     return LOCAL_HOSTS.has(new URL(value).hostname);
@@ -510,6 +573,76 @@ function applyProductionRules(
     The console mail driver prints verification and reset links to stdout. In
     production that is both a broken signup flow and a credential in the logs.
   */
+  /*
+    Local disk in production means the container's own filesystem, which is
+    replaced on every deploy and every scale event. Documents are the one thing
+    in this product that cannot be regenerated — chunks come from an original,
+    vectors from chunks, and nothing comes from a deleted volume.
+  */
+  if (value.STORAGE_DRIVER === 'local') {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['STORAGE_DRIVER'],
+      message:
+        'must not be "local" in production — container filesystems are ephemeral and uploaded documents cannot be regenerated',
+    });
+  }
+
+  /*
+    A custom S3 endpoint in production means the deployment is pointed at a
+    development MinIO rather than at S3 — documents would be written to a
+    container nobody backs up, and the failure is invisible because every
+    upload succeeds.
+  */
+  const supabaseStorage =
+    value.S3_ENDPOINT !== undefined && isSupabaseEndpoint(value.S3_ENDPOINT);
+
+  /*
+    SSE-S3 is requested per object against real S3. Supabase encrypts at rest
+    at the platform level and rejects the header outright, so `none` is the
+    only workable value there — and is permitted *only* there. Anywhere else
+    it would mean documents written unencrypted to a store that could have
+    encrypted them for free.
+  */
+  if (value.S3_SERVER_SIDE_ENCRYPTION === 'none' && !supabaseStorage) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['S3_SERVER_SIDE_ENCRYPTION'],
+      message:
+        'must not be "none" in production unless S3_ENDPOINT is Supabase Storage, which encrypts at rest itself and refuses the header',
+    });
+  }
+
+  /*
+    An endpoint override normally means the deployment is pointed at a
+    development MinIO: every upload succeeds and none of them are durable.
+    Supabase Storage is the one legitimate exception, and it is recognised by
+    hostname rather than by trusting whatever was configured.
+  */
+  if (value.S3_ENDPOINT !== undefined && !supabaseStorage) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['S3_ENDPOINT'],
+      message:
+        'must be a Supabase Storage endpoint or unset in production — any other endpoint silently stores documents outside durable object storage',
+    });
+  }
+
+  /*
+    Supabase issues its own access keys; there is no task role to fall back on,
+    so a missing pair fails at the first upload rather than at boot.
+  */
+  if (supabaseStorage) {
+    for (const key of ['S3_ACCESS_KEY_ID', 'S3_SECRET_ACCESS_KEY'] as const) {
+      if (value[key] !== undefined) continue;
+      ctx.addIssue({
+        code: 'custom',
+        path: [key],
+        message: 'is required when S3_ENDPOINT is Supabase Storage',
+      });
+    }
+  }
+
   if (value.MAIL_DRIVER === 'console') {
     ctx.addIssue({
       code: 'custom',
@@ -521,6 +654,22 @@ function applyProductionRules(
 }
 
 const envSchemaWithRules = envSchema.superRefine((value, ctx) => {
+  /*
+    Checked in every environment, not just production: a developer pointing at
+    S3 locally deserves the same failure at boot rather than on first upload,
+    when the document is already accepted and the job already queued.
+  */
+  if (value.STORAGE_DRIVER === 's3') {
+    for (const key of ['S3_BUCKET', 'S3_REGION'] as const) {
+      if (value[key] !== undefined) continue;
+      ctx.addIssue({
+        code: 'custom',
+        path: [key],
+        message: 'is required when STORAGE_DRIVER=s3',
+      });
+    }
+  }
+
   /*
     A heartbeat slower than the lease guarantees the reaper steals jobs from
     workers that are alive and making progress — the document is processed

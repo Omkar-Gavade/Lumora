@@ -28,6 +28,7 @@
     "eval": "tsx eval/run.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1111.0",
     "@lumora/shared": "*",
     "argon2": "^0.44.0",
     "chromadb": "^3.5.0",

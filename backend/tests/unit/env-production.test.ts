@@ -37,6 +37,11 @@ const VALID_PRODUCTION: Record<string, string> = {
   EMBEDDING_PROVIDER: 'gemini',
   VECTOR_STORE: 'chroma',
   CHROMA_URL: 'https://chroma.internal:8000',
+  // Object storage is now part of a valid production configuration: the local
+  // driver writes to a container filesystem that a deploy replaces.
+  STORAGE_DRIVER: 's3',
+  S3_BUCKET: 'lumora-production-documents',
+  S3_REGION: 'ap-south-1',
 };
 
 /**
@@ -110,5 +115,114 @@ describe('production environment rules', () => {
 
     expect(result.ok).toBe(false);
     expect(result.message).toContain('MAIL_DRIVER');
+  });
+
+  it('**refuses the local storage driver in production**', async () => {
+    /*
+      The failure this rule exists for is silent: uploads succeed, documents
+      are readable for the life of the task, and then a deploy replaces the
+      filesystem. Originals are the one artefact this product cannot
+      regenerate — chunks come from an original and vectors from chunks.
+    */
+    const result = await loadEnv({
+      ...VALID_PRODUCTION,
+      STORAGE_DRIVER: 'local',
+      S3_BUCKET: '',
+      S3_REGION: '',
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain('STORAGE_DRIVER');
+  });
+
+  it('refuses an S3 driver with no bucket, in any environment', async () => {
+    // Checked outside production too: failing at boot beats failing on the
+    // first upload, when the document is already accepted and queued.
+    const result = await loadEnv({
+      ...VALID_PRODUCTION,
+      NODE_ENV: 'development',
+      STORAGE_DRIVER: 's3',
+      S3_BUCKET: '',
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain('S3_BUCKET');
+  });
+
+  it('**refuses a custom S3 endpoint in production**', async () => {
+    // An endpoint override means the deployment is pointed at a development
+    // MinIO. Every upload succeeds and none of them are in S3.
+    const result = await loadEnv({
+      ...VALID_PRODUCTION,
+      S3_ENDPOINT: 'http://minio.internal:9000',
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain('S3_ENDPOINT');
+  });
+
+  it('accepts pgvector as the production vector store', async () => {
+    // The production recommendation (docs/08 §6) must actually validate.
+    const result = await loadEnv({
+      ...VALID_PRODUCTION,
+      VECTOR_STORE: 'pgvector',
+      CHROMA_URL: 'https://unused.internal:8000',
+    });
+
+    expect(result.ok).toBe(true);
+  });
+
+  it('**accepts a Supabase Storage production configuration**', async () => {
+    /*
+      The deployment target (docs/11). Supabase Storage speaks the S3 protocol,
+      so it reuses the same driver — but it needs an endpoint, its own access
+      keys, and the encryption header switched off, all three of which the
+      pre-Supabase rules refused.
+    */
+    const result = await loadEnv({
+      ...VALID_PRODUCTION,
+      VECTOR_STORE: 'pgvector',
+      DATABASE_URL: 'postgresql://postgres:pw@db.abcdefgh.supabase.co:5432/postgres?sslmode=require',
+      S3_ENDPOINT: 'https://abcdefgh.storage.supabase.co/storage/v1/s3',
+      S3_ACCESS_KEY_ID: 'supabase-key-id',
+      S3_SECRET_ACCESS_KEY: 'supabase-secret',
+      S3_SERVER_SIDE_ENCRYPTION: 'none',
+      S3_FORCE_PATH_STYLE: 'true',
+    });
+
+    expect(result.ok).toBe(true);
+  });
+
+  it('**still refuses a non-Supabase endpoint in production**', async () => {
+    // The MinIO hole stays shut: only Supabase is exempted, by hostname.
+    const result = await loadEnv({
+      ...VALID_PRODUCTION,
+      S3_ENDPOINT: 'https://minio.internal:9000',
+      S3_ACCESS_KEY_ID: 'k',
+      S3_SECRET_ACCESS_KEY: 's',
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain('S3_ENDPOINT');
+  });
+
+  it('refuses a Supabase-looking endpoint with no access keys', async () => {
+    // There is no task role to fall back on, so a missing pair would fail at
+    // the first upload rather than at boot.
+    const result = await loadEnv({
+      ...VALID_PRODUCTION,
+      S3_ENDPOINT: 'https://abcdefgh.storage.supabase.co/storage/v1/s3',
+      S3_SERVER_SIDE_ENCRYPTION: 'none',
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain('S3_ACCESS_KEY_ID');
+  });
+
+  it('refuses disabled encryption when the endpoint is not Supabase', async () => {
+    const result = await loadEnv({ ...VALID_PRODUCTION, S3_SERVER_SIDE_ENCRYPTION: 'none' });
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain('S3_SERVER_SIDE_ENCRYPTION');
   });
 });

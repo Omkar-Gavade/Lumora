@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { FakeVectorStore } from '../../src/providers/vector/fake.store.js';
-import { PgVectorStore } from '../../src/providers/vector/pgvector.store.js';
 import {
-  VectorStoreError,
   collectionFor,
   vectorIdFor,
   type VectorRecord,
@@ -200,42 +198,12 @@ describe('FakeVectorStore', () => {
   });
 });
 
-describe('PgVectorStore (stub)', () => {
-  /*
-    docs/06-roadmap.md R5: "the pgvector implementation is stubbed so the
-    interface is proven against two backends rather than shaped around one."
-
-    Every method throws rather than returning an empty result, because a stub
-    that returns `[]` type-checks, satisfies the factory, and silently indexes
-    nothing — a corpus of zero vectors that reports `ready`.
-  */
-  const store = new PgVectorStore();
-
-  it('refuses to upsert, loudly', async () => {
-    await expect(store.upsert('user_1', [])).rejects.toBeInstanceOf(VectorStoreError);
-  });
-
-  it('refuses every other operation too', async () => {
-    await expect(store.query('user_1', [1], 5)).rejects.toThrow(/not implemented/);
-    await expect(store.deleteByDocument('user_1', 'doc-1')).rejects.toThrow(/not implemented/);
-    await expect(store.deleteCollection('user_1')).rejects.toThrow(/not implemented/);
-  });
-
-  it('marks its failures non-retryable', async () => {
-    // No number of attempts writes code.
-    await expect(store.upsert('user_1', [])).rejects.toMatchObject({ retryable: false });
-  });
-
-  it('reports unhealthy instead of throwing, so startup prints a reason', async () => {
-    await expect(store.health()).resolves.toMatchObject({
-      ok: false,
-      message: expect.stringContaining('stub') as unknown as string,
-    });
-  });
-
-  it('names the fix in its error message', async () => {
-    // An operator hitting this needs to know what to set, not just that it
-    // failed.
-    await expect(store.upsert('user_1', [])).rejects.toThrow(/VECTOR_STORE=chroma/);
-  });
-});
+/*
+ * `PgVectorStore` no longer has unit tests here.
+ *
+ * It used to be a stub whose every method threw, and these asserted exactly
+ * that. It is now the production vector store, and the questions worth asking
+ * of it — distance ordering, the dimension constraint, `$in` filtering, tenant
+ * isolation — can only be answered by a real database with the `vector`
+ * extension. They live in `tests/integration/pgvector.store.test.ts`.
+ */
