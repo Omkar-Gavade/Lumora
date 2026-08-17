@@ -72,7 +72,7 @@ README with architecture diagrams and setup, seed data, a scripted demo path, an
 
 **P0 — Phase 1 ships without any of these missing:** email auth with verification and reset · document upload for four formats with honest live status · hybrid retrieval with abstention · streamed grounded chat with clickable citations · conversation history · stop generation · markdown and code rendering · light/dark theme · responsive to 320px · WCAG AA · the homepage.
 
-**P1 — next:** collections and per-conversation scoping · message feedback · conversation export · reranking · active session management · usage dashboard · document rename and re-index · Playwright E2E · virtualized history for very long threads.
+**P1 — next:** collections and per-conversation scoping (**specified** as Knowledge Base in [07-knowledge-base.md](07-knowledge-base.md) — planning complete, implementation not started) · message feedback · conversation export · reranking · active session management · usage dashboard · document rename and re-index · Playwright E2E · virtualized history for very long threads.
 
 **P2 — later, and only if justified by real use:** shared conversations · workspaces and teams · OAuth and 2FA · OCR · more file types and URL ingestion · a public API with keys · multi-model selection · an answer-quality evaluation harness in CI.
 
@@ -170,3 +170,5 @@ In-memory rate limiting, the in-process abort registry, and the in-process worke
 **Phase 5 — platform.** Public API with keys and quotas · an embeddable chat widget · connectors for Notion, Google Drive, and Slack with incremental sync · webhooks · self-hosted local model support.
 
 **Infrastructure, deliberately excluded from this document** but sequenced for when it is added: containerization, CI running lint/typecheck/tests on every PR, staging, managed Postgres, object storage, a managed vector store, error tracking, metrics and tracing on the existing request-id plumbing, and structured log aggregation. The architecture assumes none of it and blocks none of it — which is exactly why the seams in §05/8 exist.
+
+That sequencing is now written down across two documents. [08-production-architecture.md](08-production-architecture.md) plans the move from local Docker to a managed cloud deployment: it closes on the R5 trade-off above by recommending the pgvector collapse listed under Phase 2, and it treats R7's single-node constraint as the binding limit on the first deployment rather than as a footnote. [09-devops-cicd-deployment.md](09-devops-cicd-deployment.md) plans how code reaches that infrastructure — CI, containers, registry, environments, deployment and rollback — and recommends **against** Kubernetes for now, on the grounds that R7 makes its central features unusable. **Both are planning only; nothing is deployed and no CI exists.**

@@ -63,7 +63,7 @@ Priority: **P0** = Phase 1, must ship. **P1** = Phase 2. **P2** = later.
 - FR-15 (P0) Delete document → removes file bytes, rows, and vectors. Deletion is complete, not soft, and the UI says so.
 - FR-16 (P0) Per-user quotas: file size cap, file count cap, total bytes cap. Enforced server-side.
 - FR-17 (P1) Rename document, re-run ingestion on a failed document.
-- FR-18 (P1) Collections (named groups of documents) and per-conversation scoping to a collection.
+- FR-18 (P1) Collections (named groups of documents) and per-conversation scoping to a collection. Shipping as **Knowledge Base** — fully specified in [07-knowledge-base.md](07-knowledge-base.md); planning complete, implementation not started.
 - FR-19 (P2) URL ingestion, .pptx, .csv, .xlsx, OCR for scanned PDFs.
 
 ### Chat
