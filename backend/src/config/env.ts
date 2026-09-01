@@ -286,6 +286,11 @@ const envSchema = z.object({
    * two backends rather than shaped around one."
    */
   VECTOR_STORE: z.enum(['chroma', 'fake', 'pgvector']).default('fake'),
+  /**
+   * Development default only. Consumed exclusively by `ChromaVectorStore`, so
+   * production validates it only when `VECTOR_STORE=chroma`. A pgvector or
+   * fake deployment never needs it set.
+   */
   CHROMA_URL: z.url().default('http://localhost:8000'),
   /**
    * One collection per user (docs §2.5): `user_{userId}`.
@@ -560,11 +565,27 @@ function applyProductionRules(
     feature is broken" a long way from the cause: `APP_URL` puts unreachable
     links in verification emails, and `CORS_ORIGINS` refuses the real frontend.
   */
-  const urls = [
+  const urls: (readonly [string, string])[] = [
     ['APP_URL', value.APP_URL],
-    ['CHROMA_URL', value.CHROMA_URL],
     ['DATABASE_URL', value.DATABASE_URL],
-  ] as const;
+  ];
+
+  /*
+    `CHROMA_URL` is only meaningful when Chroma is the vector store.
+
+    It carries a localhost default for development, and that default was
+    checked unconditionally — so a deployment that had correctly moved to
+    `VECTOR_STORE=pgvector` was refused at boot over a variable the operator
+    had never set, does not need, and cannot find in their dashboard. The
+    error named `CHROMA_URL` while the cause was this list.
+
+    Scoped rather than removed: when Chroma *is* the store, a localhost URL in
+    production is still the misconfiguration it always was — and the default
+    above is exactly what would silently supply one.
+  */
+  if (value.VECTOR_STORE === 'chroma') {
+    urls.push(['CHROMA_URL', value.CHROMA_URL]);
+  }
 
   for (const [key, url] of urls) {
     if (!isLocalUrl(url)) continue;
