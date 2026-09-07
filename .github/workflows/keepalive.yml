@@ -1,32 +1,47 @@
 # Keeps the free-tier stack awake.
 #
-# Two independent inactivity timers make an idle Lumora stop working:
+# Two inactivity timers, on very different scales:
 #
-#   Supabase  pauses a free project after 7 days with no requests, and
+#   Render    sleeps a free instance after 15 MINUTES without a request. It
+#             wakes itself on the next one, so nothing is lost — but a measured
+#             cold start answered in 32.7s against 0.47s warm, and that half
+#             minute lands on whoever happens to arrive first.
+#   Supabase  pauses a free project after 7 DAYS with no requests, and
 #             resuming it is a manual dashboard action.
-#   Koyeb     scales a free instance to zero after 1 hour without traffic.
-#             That one is self-healing — the next request wakes it — so it is
-#             not what this workflow is for.
 #
-# Only the Supabase pause is actually damaging, because it needs a human. One
-# request every three days is enough to reset a seven-day timer with room to
-# spare for a missed run.
+# **One ping serves both**, which is why there is a single schedule rather than
+# two. `/health/ready` touches the database, so the request that keeps Render
+# warm is also the request that resets Supabase's seven-day clock. Reducing the
+# frequency below is therefore not only a latency decision — take it far enough
+# and the project pauses.
 #
 # This is deliberately the smallest thing that works: a single GET to a public
 # health endpoint. It is not load generation, it does not authenticate, and it
 # does not touch user data.
 #
-# **Provider policies change.** Supabase's pause window and Koyeb's scale-down
-# are current as of writing and are not contractual. If either changes, this
-# schedule is the thing to revisit — see docs/11 §Free-tier limits.
+# **This mitigates cold starts; it does not eliminate them.** GitHub's
+# scheduled runs are best-effort and are frequently delayed under load — a
+# five-minute cron does not guarantee a five-minute interval, and a long enough
+# delay still lets a 15-minute window close. Two things that do fix it
+# properly: an external uptime pinger, which honours its interval, or an
+# instance that does not sleep. GitHub also disables schedules on a repository
+# with no activity for 60 days, so a dormant repo silently stops being pinged.
+#
+# **Provider policies change.** These windows are current as of writing and are
+# not contractual — Oracle halved its Always Free compute in June 2026 with no
+# announcement at all, which is the standing reminder that free-tier terms
+# move. If either window changes, this schedule is the thing to revisit — see
+# docs/11 §7 and docs/12 §8.
 
 name: Keepalive
 
 on:
   schedule:
-    # 07:00 UTC every third day. Not hourly: the goal is to reset a 7-day
-    # timer, and anything more frequent is traffic nobody asked for.
-    - cron: '0 7 */3 * *'
+    # Every five minutes, which is GitHub's floor. Sized against the SHORTER
+    # of the two timers: Render's 15-minute window, not Supabase's seven days.
+    # The margin is deliberate — with delivery this unreliable, a ten-minute
+    # cron leaves no room for a late run before the window closes.
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -50,7 +65,8 @@ jobs:
 
           # `/health/ready` rather than `/health`: readiness touches the
           # database, which is the thing whose inactivity timer matters. A
-          # liveness probe would keep Koyeb awake while Supabase still paused.
+          # liveness probe answers from memory and would let Supabase pause
+          # underneath a host that looked perfectly healthy.
           code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 "$API_URL/health/ready" || echo 000)
           echo "GET $API_URL/health/ready -> $code"
 
