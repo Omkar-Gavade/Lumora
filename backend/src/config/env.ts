@@ -677,6 +677,42 @@ function applyProductionRules(
         message: 'is required when S3_ENDPOINT is Supabase Storage',
       });
     }
+
+    /*
+      The two Supabase requirements that are *defaults everywhere else*, which
+      is exactly why a deploy omits them silently.
+
+      Neither fails at boot on its own. `new S3Client()` opens no connection,
+      so the process logs "Storage provider ready" either way and the first
+      symptom is every upload returning STORAGE_FAILURE, with the real reason
+      buried as a `cause` on a wrapped error.
+
+      Path style: under the default virtual-host addressing the SDK builds
+      `https://<bucket>.<ref>.storage.supabase.co/...`. Supabase's wildcard
+      certificate does not cover that second label, so the request dies at TLS
+      before it is ever a storage problem.
+
+      Encryption: `AES256` is right against real S3 and is the default for that
+      reason. Supabase encrypts at rest itself and rejects the header, so the
+      object is never written.
+    */
+    if (!value.S3_FORCE_PATH_STYLE) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['S3_FORCE_PATH_STYLE'],
+        message:
+          'must be "true" when S3_ENDPOINT is Supabase Storage — virtual-host addressing builds a hostname the certificate does not cover',
+      });
+    }
+
+    if (value.S3_SERVER_SIDE_ENCRYPTION !== 'none') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['S3_SERVER_SIDE_ENCRYPTION'],
+        message:
+          'must be "none" when S3_ENDPOINT is Supabase Storage, which encrypts at rest itself and rejects the header',
+      });
+    }
   }
 
   if (value.MAIL_DRIVER === 'console') {
