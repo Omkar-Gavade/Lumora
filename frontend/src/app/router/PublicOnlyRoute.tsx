@@ -11,15 +11,24 @@ import { safeNextPath } from './safe-next';
  * login form for the account they are currently using — and submitting it
  * starts a second session for no reason.
  *
- * Renders nothing while resolving rather than a skeleton: these are small
- * centred cards, and a full-shell skeleton flashing behind a login form would
- * be more jarring than a blank frame.
+ * **The form renders immediately, including while the session is still
+ * resolving.** It used to return `null` for that window, which was defensible
+ * when the window was a few hundred milliseconds and wrong once it was not: on
+ * a cold backend the bootstrap refresh can take half a minute, and for that
+ * whole time /login was a blank page. The reported symptom was exactly that —
+ * the login screen appearing only on a second visit, once the session had
+ * already resolved and the guard stopped blocking.
+ *
+ * The asymmetry with `ProtectedRoute` is deliberate. That guard must wait,
+ * because rendering app chrome for a user who turns out to be signed out is a
+ * privacy question. This one has nothing to protect: the worst case is that an
+ * already-signed-in user sees a login form for a moment before being
+ * redirected, which is a cosmetic flash. Weigh that against a signed-out user
+ * — the entire audience for this screen — staring at nothing.
  */
 export function PublicOnlyRoute() {
   const { status } = useAuth();
   const [searchParams] = useSearchParams();
-
-  if (status === 'loading') return null;
 
   if (status === 'authenticated') {
     /*
