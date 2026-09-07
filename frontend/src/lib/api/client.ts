@@ -3,7 +3,26 @@ import { env } from '@/app/config/env';
 import { ApiError, toApiError } from './errors';
 
 const API_PREFIX = '/api/v1';
-const REQUEST_TIMEOUT_MS = 15_000;
+
+/**
+ * Sized for a cold backend, not for a warm one.
+ *
+ * This was 15s, which is a sensible number and was the wrong one: the API runs
+ * on an instance that sleeps when idle, and a measured cold start answered
+ * `/health` in **32.7s** (0.47s once warm). So the first sign-in of the hour
+ * aborted before the server had finished waking, showed an error, and worked
+ * on the retry that happened to arrive after it was up.
+ *
+ * A long ceiling costs less than it appears to. The failures people actually
+ * hit — no network, DNS failure, connection refused — reject on their own and
+ * never reach this timeout. It only applies where the server accepted the
+ * connection and has not answered yet, which is exactly the waking case, and
+ * there the right behaviour is to wait.
+ *
+ * **This number is a property of the hosting, not of the client.** On an
+ * instance that does not sleep it should come back down.
+ */
+const REQUEST_TIMEOUT_MS = 60_000;
 
 /**
  * The access token lives in a module variable, not in React state and never in
@@ -64,6 +83,20 @@ async function refreshSession(): Promise<boolean> {
         // The refresh cookie is httpOnly and path-scoped; `include` is what
         // attaches it cross-origin.
         credentials: 'include',
+        /*
+          Bounded, like every other request. This is a raw `fetch` rather than
+          a call through `execute` — it must not carry an Authorization header
+          or recurse into the refresh path — and it inherited no timeout from
+          that, so a server that accepted the connection and never replied left
+          it pending indefinitely.
+ 
+          That matters more here than anywhere else: this is the call the app
+          boots on, so an unbounded hang pins `AuthProvider` at `loading` for
+          as long as the socket stays open, and every guard downstream waits
+          with it. Failing after the ceiling resolves to "no session", which is
+          the correct answer when the API cannot be reached.
+        */
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
 
       if (!response.ok) return false;
